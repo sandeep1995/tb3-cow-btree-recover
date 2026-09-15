@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tests
+plugins: json-ctrf-0.5.2
+collected 8 items
+...FFFF.                                                                 [100%]
+=================================== FAILURES ===================================
+___________________________ test_stale_sibling_image ___________________________
+privilege-dropped worker did not report success
+__________________________ test_torn_newer_superblock __________________________
+privilege-dropped worker did not report success
+____________________________ test_duplicate_key_lsn ____________________________
+privilege-dropped worker did not report success
+_________________________ test_latest_superblock_slot1 _________________________
+privilege-dropped worker did not report success
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_outputs.py::test_format_py_unchanged
+PASSED tests/test_outputs.py::test_format_md_unchanged
+PASSED tests/test_outputs.py::test_empty_image
+PASSED tests/test_outputs.py::test_recovery_does_not_mutate_image
+FAILED tests/test_outputs.py::test_stale_sibling_image - privilege-dropped wo...
+FAILED tests/test_outputs.py::test_torn_newer_superblock - privilege-dropped ...
+FAILED tests/test_outputs.py::test_duplicate_key_lsn - privilege-dropped work...
+FAILED tests/test_outputs.py::test_latest_superblock_slot1 - privilege-droppe...
+========================= 4 failed, 4 passed in 0.17s ==========================
