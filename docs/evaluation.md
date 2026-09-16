@@ -88,6 +88,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Codex CBT4 | 1 `jobs/c4-run-codex-1/2026-09-17__01-36-42` | 1.0 | Genuine pass; 19/19; trial 2 aborted |
 | Codex CBT5 | 1 `jobs/c5-run-codex-1/2026-09-17__01-54-55` | 1.0 | Genuine pass; 21/21; suite stopped |
 | Codex CBT6 | 1 `jobs/c6-run-codex-1/2026-09-17__02-14-31` | 1.0 | Genuine pass; 21/21; wrote its own decoder; suite stopped |
+| Codex engine | 1 `jobs/e7-run-codex-1/2026-09-17__03-04-10` | 1.0 | Genuine pass; 16/16; required WAL COMMIT on the super chain; writer then changed to COMMIT-before-super |
 | Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
@@ -107,7 +108,8 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | --- | --- | --- |
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
 | Deterministic empty recover engine | 0.0 | `jobs/e7-cheat-oracle/2026-09-17__03-02-20` |
-| Codex engine `/run` | pending | first probe after engine rewrite |
+| Codex engine `/run` 1 | 1.0 | Genuine pass 16/16; `jobs/e7-run-codex-1/2026-09-17__03-04-10`; agent read commit.py and required WAL COMMIT on the super chain |
+| Codex engine `/run` after COMMIT-before-super | pending | writer now treats COMMIT as durable without a later superblock |
 | Codex CBT6 `/cheat` | not started | `/run` still passing on CBT6 |
 | Claude `/cheat` | not started | Codex first |
 

@@ -54,16 +54,25 @@ def commit_tree(store) -> None:
     data_ids = [pid for pid, _ in writes]
     slot = store.next_slot
     lsn = store.lsn
-    wal.write_begin(begin_pid, pages_pid, lsn, slot)
+    other = 1 - slot
+    free_head = store.allocator.reclaim(used, other)
+    page_count = max(store.allocator.high_water, store.pager.page_count())
+    meta = {
+        "root_page": root.page_id,
+        "page_count": page_count,
+        "entry_count": len(store.committed),
+        "free_head": free_head,
+        "root_lsn": root.lsn,
+    }
+    wal.write_begin(begin_pid, pages_pid, lsn, slot, **meta)
     _maybe_crash(store, "wal_begin")
     for pid, page in writes:
         store.pager.write(pid, page)
     _maybe_crash(store, "pages")
     wal.write_pages(pages_pid, commit_pid, lsn, slot, data_ids)
     _maybe_crash(store, "wal_pages")
-    other = 1 - slot
-    free_head = store.allocator.reclaim(used, other)
-    page_count = max(store.allocator.high_water, store.pager.page_count())
+    wal.write_commit(commit_pid, lsn, slot, **meta)
+    _maybe_crash(store, "wal_commit")
     sb = encode_super(
         root_page=root.page_id,
         page_count=page_count,
@@ -81,8 +90,6 @@ def commit_tree(store) -> None:
         store.pager.write(slot, bytes(torn))
         raise Crash("super")
     _maybe_crash(store, "super")
-    wal.write_commit(commit_pid, lsn, slot)
-    _maybe_crash(store, "wal_commit")
     store.allocator.retain(slot, used)
     store.next_slot = other
     _mark_clean(root)

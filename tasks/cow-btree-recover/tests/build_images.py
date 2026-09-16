@@ -87,7 +87,7 @@ def crash_wal_pages(path: Path) -> None:
 
 def crash_super(path: Path) -> None:
     st = _prefix_store(path, 40)
-    st.crash_at = "super"
+    st.crash_at = "wal_commit"
     st.insert(b"ghost2", b"nope" + PAD)
 
 
@@ -113,7 +113,7 @@ def tombstone(path: Path) -> None:
 
 def torn_delete(path: Path) -> None:
     st = _prefix_store(path, 40)
-    st.crash_at = "super"
+    st.crash_at = "wal_commit"
     st.delete(b"user:0000")
 
 
@@ -147,7 +147,7 @@ def interact(path: Path) -> None:
     st = _prefix_store(path, 80)
     st.insert(b"user:0050", b"updated-0050" + PAD)
     st.insert(b"ov", b"Y" * 120)
-    st.crash_at = "super"
+    st.crash_at = "wal_commit"
     st.insert(b"ghost", b"nope" + PAD)
 
 

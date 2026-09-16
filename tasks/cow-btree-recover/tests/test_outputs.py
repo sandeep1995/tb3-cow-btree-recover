@@ -52,7 +52,7 @@ def test_crash_after_wal_pages():
 
 def test_crash_after_super():
     got = _eq("crash_super.db")
-    assert b"ghost2" not in got
+    assert b"ghost2" in got
     assert got
 
 
@@ -75,7 +75,8 @@ def test_tombstone():
 
 def test_torn_delete():
     got = _eq("torn_delete.db")
-    assert got[b"user:0000"].startswith(b"v0000")
+    assert b"user:0000" not in got
+    assert got
 
 
 def test_overflow():
@@ -96,13 +97,13 @@ def test_prefix():
 
 def test_torn_newer():
     got = _eq("torn_newer.db")
-    assert b"user:0099" not in got
+    assert b"user:0099" in got
     assert got
 
 
 def test_interact():
     got = _eq("interact.db")
-    assert b"ghost" not in got
+    assert b"ghost" in got
     assert got
 
 

@@ -59,3 +59,5 @@ Type 5. `right_sibling` is the next free page. No extra payload.
 Type 6. `right_sibling` is the next WAL page in the same chain. `child0` equals the record type: `1` BEGIN, `2` PAGES, `3` COMMIT. Header `lsn` is the transaction LSN. `nkeys` is the number of page ids that follow (zero for BEGIN and COMMIT).
 
 After the header: `uint8 rec_type`, `uint8 slot`, `uint16 npages`, then `npages` times `uint32 page_id`. `rec_type` equals `child0`. `slot` is 0 or 1.
+
+BEGIN and COMMIT records then store `uint32 root_page`, `uint32 page_count`, `uint32 entry_count`, `uint32 free_head`, `uint64 root_lsn`. PAGES records do not carry that trailer.

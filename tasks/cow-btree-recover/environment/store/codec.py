@@ -21,6 +21,8 @@ from .format import (
     TYPE_OVERFLOW,
     TYPE_SUPER,
     TYPE_WAL,
+    WAL_BEGIN,
+    WAL_COMMIT,
     apply_checksum,
     pack_header,
     unpack_header,
@@ -150,7 +152,19 @@ def decode_super(page: bytes) -> dict:
     }
 
 
-def encode_wal(*, rec_type: int, lsn: int, slot: int, page_ids: list[int] | tuple[int, ...] = (), nxt: int = NO_PAGE) -> bytes:
+def encode_wal(
+    *,
+    rec_type: int,
+    lsn: int,
+    slot: int,
+    page_ids: list[int] | tuple[int, ...] = (),
+    nxt: int = NO_PAGE,
+    root_page: int = NO_PAGE,
+    page_count: int = 0,
+    entry_count: int = 0,
+    free_head: int = NO_PAGE,
+    root_lsn: int = 0,
+) -> bytes:
     ids = list(page_ids)
     page = bytearray(PAGE_SIZE)
     page[:HEADER_SIZE] = pack_header(
@@ -169,6 +183,18 @@ def encode_wal(*, rec_type: int, lsn: int, slot: int, page_ids: list[int] | tupl
         _need(page, off, 4)
         struct.pack_into("<I", page, off, pid)
         off += 4
+    if rec_type in (WAL_BEGIN, WAL_COMMIT):
+        _need(page, off, 24)
+        struct.pack_into(
+            "<IIIIQ",
+            page,
+            off,
+            root_page,
+            page_count,
+            entry_count,
+            free_head,
+            root_lsn,
+        )
     return apply_checksum(page)
 
 
@@ -183,7 +209,26 @@ def decode_wal(page: bytes) -> dict:
     for _ in range(n):
         pid, off = _read_u32(page, off)
         ids.append(pid)
-    return {**hdr, "rec_type": rec_type, "wal_slot": slot, "page_ids": ids}
+    root_page = NO_PAGE
+    page_count = 0
+    entry_count = 0
+    free_head = NO_PAGE
+    root_lsn = 0
+    if rec_type in (WAL_BEGIN, WAL_COMMIT):
+        root_page, page_count, entry_count, free_head, root_lsn = struct.unpack_from(
+            "<IIIIQ", page, off
+        )
+    return {
+        **hdr,
+        "rec_type": rec_type,
+        "wal_slot": slot,
+        "page_ids": ids,
+        "root_page": root_page,
+        "page_count": page_count,
+        "entry_count": entry_count,
+        "free_head": free_head,
+        "root_lsn": root_lsn,
+    }
 
 
 def encode_overflow(chunk: bytes, lsn: int, nxt: int, seq: int = 0) -> bytes:
