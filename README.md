@@ -2,7 +2,7 @@
 
 Independent Terminal-Bench 3 task for a Founding Engineer hiring evaluation. **Klavis AI is not affiliated with Terminal-Bench.** There is no IP transfer. Keep this repository under your control (GitHub or otherwise). This repo does **not** open a PR against `harbor-framework/terminal-bench`.
 
-Task: `tasks/cow-btree-recover` — repair crash recovery for an original copy-on-write B+tree (dual superblocks, prefix-compressed leaves, overflow chains, page reuse, stale siblings, interrupted-split duplicates).
+Task: `tasks/cow-btree-recover` — repair crash recovery for an original copy-on-write B+tree engine with a WAL intent log, freelist, and a buggy in-tree recoverer. FORMAT.md is layout only; durability follows the writer's commit protocol.
 
 ## Layout
 
@@ -121,4 +121,4 @@ git push -u github cursor/cow-btree-recover-bc11:main
 
 ## What the task asks
 
-The agent must make `recover_store(path)` reconstruct the committed map of a CoW B+tree after crash. The format is specified in `/app/store/FORMAT.md`. Tests import the agent's function in a separate verifier container and compare it to a baked spec recoverer on hidden images the agent never sees.
+The agent must make `recover_store(path)` reconstruct the last committed snapshot of a CoW B+tree after crash. Difficulty is the existing engine (pager, WAL, freelist, path-copying tree) plus interacting bugs in `/app/store/recovery/`, not a markdown checklist. Tests import the agent's function in a separate verifier container and compare it to a baked spec recoverer on hidden images the agent never sees.

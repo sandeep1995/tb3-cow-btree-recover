@@ -19,7 +19,9 @@ The task was hardened again to CBT5: leaf kind `2` tombstones persist after dele
 
 The task was hardened again to CBT6: `/app/store/codec.py` is encode-only. Agents must parse `FORMAT.md` themselves. The oracle decoder lives under `/solution` only.
 
-## Static checks — PASS (CBT6)
+CBT1–CBT6 all failed that strategy. The task was rebuilt around a multi-package engine: pager, freelist, WAL intent log (BEGIN / PAGES / COMMIT), path-copying B+tree, and a shipped recoverer that looks almost right. FORMAT.md is layout only. Hidden images come from crashing the real writer. The agent patches `/app/store/recovery/` rather than transcribing a checklist.
+
+## Static checks — PASS (engine rewrite)
 
 ```bash
 ./scripts/run-static-checks.sh tasks/cow-btree-recover
@@ -107,6 +109,6 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 ## Failure analysis
 
-Nop and empty-recover fail because recovery must select a checksum-valid superblock by LSN, walk interior children (not stale `right_sibling`), reconstitute prefix-compressed keys, assemble overflow chains, reject a torn newer root or torn overflow, ignore unlinked extra leaves, and keep the higher-LSN value on duplicate keys. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
+Nop and empty-recover fail because recovery must honor the writer's WAL commit protocol, ignore uncommitted pages, walk children rather than stale siblings, omit tombstones, and assemble shared overflow chains. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
 
-Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` has now passed genuine `/run` trial 1 on every revision (CBT1–CBT6). Adding documented invariants (prefix, overflow, delta keys, overflow LSN vs leaf, shared overflow, chunk indexes, root_lsn, tombstones) and removing `decode_node` from `/app/store/codec.py` does not stop it: the agent implements `FORMAT.md` directly in about ten minutes and clears all hidden tests. Claude `/run` and `/cheat` were not started. A further Codex suite on this same complete-spec shape would burn budget without changing the outcome. The next qualitative change would have to be a larger engine whose crash behavior cannot be recovered by transcribing `FORMAT.md`, not another header field.
+Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed genuine `/run` trial 1 on every FORMAT-checklist revision (CBT1–CBT6). The engine rewrite drops that strategy. Claude `/run` and `/cheat` stay blocked until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.

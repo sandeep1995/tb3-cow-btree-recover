@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .format import PAGE_SIZE, SUPER_SLOTS
+from ..format import PAGE_SIZE, SUPER_SLOTS
 
 
 class Pager:
@@ -27,19 +27,27 @@ class Pager:
         if len(page) != PAGE_SIZE:
             raise ValueError("bad page size")
         needed = (page_id + 1) * PAGE_SIZE
-        if self.path.stat().st_size < needed:
+        size = self.path.stat().st_size
+        if size < needed:
             with self.path.open("ab") as f:
-                f.write(b"\x00" * (needed - self.path.stat().st_size))
+                f.write(b"\x00" * (needed - size))
         with self.path.open("r+b") as f:
             f.seek(page_id * PAGE_SIZE)
             f.write(page)
             f.flush()
 
     def read_all(self) -> list[bytes]:
-        data = self.path.read_bytes()
-        if len(data) % PAGE_SIZE:
-            data = data[: len(data) - (len(data) % PAGE_SIZE)]
-        return [data[i : i + PAGE_SIZE] for i in range(0, len(data), PAGE_SIZE)]
+        return load_pages(self.path)
+
+
+def load_pages(path: str | Path) -> list[bytes]:
+    image = Path(path)
+    if not image.exists():
+        return []
+    data = image.read_bytes()
+    if len(data) % PAGE_SIZE:
+        data = data[: len(data) - (len(data) % PAGE_SIZE)]
+    return [data[i : i + PAGE_SIZE] for i in range(0, len(data), PAGE_SIZE)]
 
 
 def super_pages(pages: list[bytes]) -> list[bytes]:

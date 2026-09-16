@@ -20,6 +20,7 @@ from .format import (
     TYPE_LEAF,
     TYPE_OVERFLOW,
     TYPE_SUPER,
+    TYPE_WAL,
     apply_checksum,
     pack_header,
     unpack_header,
@@ -112,18 +113,30 @@ def encode_super(
     slot: int,
     lsn: int,
     free_head: int = NO_PAGE,
+    wal_head: int = NO_PAGE,
     root_lsn: int = 0,
 ) -> bytes:
     page = bytearray(PAGE_SIZE)
     page[:HEADER_SIZE] = pack_header(ptype=TYPE_SUPER, nkeys=0, lsn=lsn)
-    struct.pack_into("<IIIIIQ", page, HEADER_SIZE, root_page, page_count, entry_count, slot, free_head, root_lsn)
+    struct.pack_into(
+        "<IIIIIIQ",
+        page,
+        HEADER_SIZE,
+        root_page,
+        page_count,
+        entry_count,
+        slot,
+        free_head,
+        wal_head,
+        root_lsn,
+    )
     return apply_checksum(page)
 
 
 def decode_super(page: bytes) -> dict:
     hdr = unpack_header(page)
-    root_page, page_count, entry_count, slot, free_head, root_lsn = struct.unpack_from(
-        "<IIIIIQ", page, HEADER_SIZE
+    root_page, page_count, entry_count, slot, free_head, wal_head, root_lsn = struct.unpack_from(
+        "<IIIIIIQ", page, HEADER_SIZE
     )
     return {
         **hdr,
@@ -132,8 +145,45 @@ def decode_super(page: bytes) -> dict:
         "entry_count": entry_count,
         "slot": slot,
         "free_head": free_head,
+        "wal_head": wal_head,
         "root_lsn": root_lsn,
     }
+
+
+def encode_wal(*, rec_type: int, lsn: int, slot: int, page_ids: list[int] | tuple[int, ...] = (), nxt: int = NO_PAGE) -> bytes:
+    ids = list(page_ids)
+    page = bytearray(PAGE_SIZE)
+    page[:HEADER_SIZE] = pack_header(
+        ptype=TYPE_WAL,
+        nkeys=len(ids),
+        lsn=lsn,
+        right_sibling=nxt,
+        child0=rec_type,
+    )
+    off = HEADER_SIZE
+    page[off] = rec_type & 0xFF
+    page[off + 1] = slot & 0xFF
+    struct.pack_into("<H", page, off + 2, len(ids))
+    off += 4
+    for pid in ids:
+        _need(page, off, 4)
+        struct.pack_into("<I", page, off, pid)
+        off += 4
+    return apply_checksum(page)
+
+
+def decode_wal(page: bytes) -> dict:
+    hdr = unpack_header(page)
+    if hdr["type"] != TYPE_WAL:
+        raise ValueError("not wal")
+    rec_type = page[HEADER_SIZE]
+    slot = page[HEADER_SIZE + 1]
+    n, off = _read_u16(page, HEADER_SIZE + 2)
+    ids: list[int] = []
+    for _ in range(n):
+        pid, off = _read_u32(page, off)
+        ids.append(pid)
+    return {**hdr, "rec_type": rec_type, "wal_slot": slot, "page_ids": ids}
 
 
 def encode_overflow(chunk: bytes, lsn: int, nxt: int, seq: int = 0) -> bytes:
