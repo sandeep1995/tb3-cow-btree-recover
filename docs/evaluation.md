@@ -94,6 +94,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Codex CBT6 | 1 `jobs/c6-run-codex-1/2026-09-17__02-14-31` | 1.0 | Genuine pass; 21/21; wrote its own decoder; suite stopped |
 | Codex engine | 1 `jobs/e7-run-codex-1/2026-09-17__03-04-10` | 1.0 | Genuine pass; 16/16; required WAL COMMIT on the super chain; writer then changed to COMMIT-before-super |
 | Codex COMMIT-before-super | 1 `jobs/e8-run-codex-1/2026-09-17__03-22-54` | 1.0 | Genuine pass; 16/16; scanned WAL BEGIN/PAGES/COMMIT and installed a commit with no later super |
+| Codex checkpoint-fence | 1 `jobs/e9-run-codex-1/2026-09-17__04-00-39` | 0.0 | Genuine fail; 13/21; failed the eight checkpoint-fence images; still installed a newer BEGIN/PAGES/COMMIT |
 | Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
