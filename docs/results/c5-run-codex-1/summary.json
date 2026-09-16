@@ -1,0 +1,46 @@
+{
+  "label": "c5-run-codex-1",
+  "job": "/Users/sandeep/tb3-cow-btree-recover/jobs/c5-run-codex-1/2026-09-17__01-54-55",
+  "trial": "/Users/sandeep/tb3-cow-btree-recover/jobs/c5-run-codex-1/2026-09-17__01-54-55/cow-btree-recover__GieRiGP",
+  "reward": "[REDACTED]",
+  "exception_head": "",
+  "job_result": {
+    "id": "a596400e-6627-4a64-8362-2b74ffbc3c4e",
+    "started_at": "2026-09-17T01:54:56.140364",
+    "updated_at": "2026-09-17T02:08:05.587319",
+    "finished_at": "2026-09-17T02:08:05.587319",
+    "n_total_trials": 1,
+    "stats": {
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "n_running_trials": 0,
+      "n_pending_trials": 0,
+      "n_cancelled_trials": 0,
+      "n_retries": 0,
+      "evals": {
+        "codex__gpt-5.6-sol__adhoc": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "pass_at_k": {},
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "cow-btree-recover__GieRiGP"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      },
+      "n_input_tokens": 580385,
+      "n_cache_tokens": 511104,
+      "n_output_tokens": 26694,
+      "cost_usd": 1.0154456
+    }
+  }
+}
