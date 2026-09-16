@@ -20,7 +20,7 @@ def recover_store(path: str | Path) -> dict[bytes, bytes]:
         return {}
     reset()
     chosen = choose_super(pages)
-    if chosen is None:
-        return {}
-    out = collect_map(pages, chosen)
+    out: dict[bytes, bytes] | None = None
+    if chosen is not None:
+        out = collect_map(pages, chosen)
     return apply_intent(pages, chosen, out)

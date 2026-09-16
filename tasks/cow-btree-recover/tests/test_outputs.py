@@ -52,7 +52,7 @@ def test_crash_after_wal_pages():
 
 def test_crash_after_super():
     got = _eq("crash_super.db")
-    assert b"ghost2" in got
+    assert b"ghost2" not in got
     assert got
 
 
@@ -75,7 +75,7 @@ def test_tombstone():
 
 def test_torn_delete():
     got = _eq("torn_delete.db")
-    assert b"user:0000" not in got
+    assert b"user:0000" in got
     assert got
 
 
@@ -97,13 +97,44 @@ def test_prefix():
 
 def test_torn_newer():
     got = _eq("torn_newer.db")
-    assert b"user:0099" in got
+    assert b"user:0099" not in got
     assert got
 
 
 def test_interact():
     got = _eq("interact.db")
-    assert b"ghost" in got
+    assert b"ghost" not in got
+    assert got
+
+
+def test_first_inflight():
+    got = _eq("first_inflight.db")
+    assert got == {}
+
+
+def test_two_inflight():
+    got = _eq("two_inflight.db")
+    assert b"ghost-a" not in got
+    assert b"ghost-b" not in got
+    assert got
+
+
+def test_wal_wrap():
+    got = _eq("wal_wrap.db")
+    assert b"wrap-ghost" not in got
+    assert got
+
+
+def test_torn_commit():
+    got = _eq("torn_commit.db")
+    assert b"torn-ghost" not in got
+    assert got
+
+
+def test_reuse_inflight():
+    got = _eq("reuse_inflight.db")
+    assert b"ghost-reuse" not in got
+    assert b"zzz-poison" not in got
     assert got
 
 

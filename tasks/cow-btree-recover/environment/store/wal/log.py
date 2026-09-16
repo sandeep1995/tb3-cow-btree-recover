@@ -13,9 +13,7 @@ class WalWriter:
         self.allocator = allocator
 
     def reserve(self) -> tuple[int, int, int]:
-        begin_pid = self.allocator.alloc()
-        pages_pid = self.allocator.alloc()
-        commit_pid = self.allocator.alloc()
+        begin_pid, pages_pid, commit_pid = self.allocator.wal_ids(3)
         return begin_pid, pages_pid, commit_pid
 
     def write_begin(self, pid: int, nxt: int, lsn: int, slot: int, **meta) -> None:
