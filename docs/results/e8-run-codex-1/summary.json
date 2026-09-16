@@ -1,0 +1,46 @@
+{
+  "label": "e8-run-codex-1",
+  "job": "/Users/sandeep/tb3-cow-btree-recover/jobs/e8-run-codex-1/2026-09-17__03-22-54",
+  "trial": "/Users/sandeep/tb3-cow-btree-recover/jobs/e8-run-codex-1/2026-09-17__03-22-54/cow-btree-recover__QGYfFbv",
+  "reward": "[REDACTED]",
+  "exception_head": "",
+  "job_result": {
+    "id": "ed586072-f87c-4f44-865a-a57763a1a85c",
+    "started_at": "2026-09-17T03:22:54.852484",
+    "updated_at": "2026-09-17T03:35:01.097274",
+    "finished_at": "2026-09-17T03:35:01.097274",
+    "n_total_trials": 1,
+    "stats": {
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "n_running_trials": 0,
+      "n_pending_trials": 0,
+      "n_cancelled_trials": 0,
+      "n_retries": 0,
+      "evals": {
+        "codex__gpt-5.6-sol__adhoc": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "pass_at_k": {},
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "cow-btree-recover__QGYfFbv"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      },
+      "n_input_tokens": 963767,
+      "n_cache_tokens": 873984,
+      "n_output_tokens": 25339,
+      "cost_usd": 1.2155055999999997
+    }
+  }
+}

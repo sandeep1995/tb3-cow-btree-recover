@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.[REDACTED]3.[REDACTED]3, pytest-9.[REDACTED].[REDACTED], pluggy-[REDACTED].6.0
+rootdir: /tests
+plugins: json-ctrf-0.5.2
+collected [REDACTED]6 items
+................                                                         [[REDACTED]00%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_outputs.py::test_format_py_unchanged
+PASSED tests/test_outputs.py::test_format_md_unchanged
+PASSED tests/test_outputs.py::test_empty_image
+PASSED tests/test_outputs.py::test_slot[REDACTED]_latest
+PASSED tests/test_outputs.py::test_crash_after_wal_pages
+PASSED tests/test_outputs.py::test_crash_after_super
+PASSED tests/test_outputs.py::test_stale_sibling
+PASSED tests/test_outputs.py::test_page_reuse
+PASSED tests/test_outputs.py::test_tombstone
+PASSED tests/test_outputs.py::test_torn_delete
+PASSED tests/test_outputs.py::test_overflow
+PASSED tests/test_outputs.py::test_shared_overflow
+PASSED tests/test_outputs.py::test_prefix
+PASSED tests/test_outputs.py::test_torn_newer
+PASSED tests/test_outputs.py::test_interact
+PASSED tests/test_outputs.py::test_recovery_does_not_mutate_image
+============================== [REDACTED]6 passed in 0.[REDACTED][REDACTED]s ==============================
+CTRF verification: [REDACTED]6/[REDACTED]6 passed
