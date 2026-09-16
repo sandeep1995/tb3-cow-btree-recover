@@ -9,9 +9,11 @@ TB3 CI snapshot: `vendor/tb3/harbor-run-defaults.yml` (3 trials; `claude-code` +
 
 Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed two genuine `/run` trials on the CBT1 revision (reward 1.0, 8/8 hidden tests). The agent rewrote `/app/store/recover.py` from `FORMAT.md`, which listed dual-superblock selection, child walks, checksum rules, duplicate LSN, and torn-write fallback as a compact implementable spec. Remaining CBT1 `/run` and `/cheat` trials were stopped after the second pass. Agent sources: `docs/results/run-codex-1/agent-store/`, `docs/results/run-codex-2/agent-store/`.
 
-The task was then hardened to CBT2: prefix-compressed leaves, overflow chains, freelist page reuse, unlinked extra leaves, and interacting torn writes. `FORMAT.md` documents layout and commit invariants without a short recovery cookbook. The public stub still follows sibling links and ignores overflow assembly.
+The task was then hardened to CBT2: prefix-compressed leaves, overflow chains, freelist page reuse, unlinked extra leaves, and interacting torn writes. Codex still passed two genuine `/run` trials (reward 1.0). Remaining CBT2 `/run` trial 3 was an infra `apt-get` kill, not a model failure.
 
-## Static checks — PASS (hardened)
+The task was hardened again to CBT3: delta-coded subsequent leaf keys (`FLAG_DELTA`), overflow LSN at most the owning leaf LSN, shared overflow DAGs, and kind-1 values that must be longer than the inline cap. Hidden tests grew from 14 to 17.
+
+## Static checks — PASS (CBT3)
 
 ```bash
 ./scripts/run-static-checks.sh tasks/cow-btree-recover
@@ -19,35 +21,33 @@ The task was then hardened to CBT2: prefix-compressed leaves, overflow chains, f
 
 All 22 TB3 `scripts/checks/check-*.sh` scripts passed (Python 3.13+; the macOS CLT `python3` 3.9 lacks `tomllib`).
 
-## Implementation rubric — not run (Claude OAuth)
+## Implementation rubric — not run (Codex first)
+
+Claude `/run`, `/cheat`, and `harbor check` wait until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.
+
+## Docker build / oracle / nop — PASS (CBT3)
 
 ```bash
-harbor check tasks/cow-btree-recover -r vendor/tb3/task-implementation.toml -m anthropic/claude-opus-4-8
-```
-
-Claude Code reports logged in, but `claude -p` fails with `OAuth session expired and could not be refreshed`. A desktop `claude auth login --claudeai` prompt was left waiting; it was not restarted. No Console API billing.
-
-## Docker build / oracle / nop — PASS (hardened)
-
-```bash
-harbor run -p tasks/cow-btree-recover --agent oracle --env docker --yes -k 1 -n 1 -o jobs/oracle
-harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -o jobs/nop
+harbor run -p tasks/cow-btree-recover --agent oracle --env docker --yes -k 1 -n 1 -o jobs/h3-oracle
+harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -o jobs/h3-nop
 ```
 
 | Run | Job | Reward |
 | --- | --- | --- |
-| oracle | `jobs/oracle/2026-09-17__00-26-39` | 1.0 |
-| nop | `jobs/nop/2026-09-17__00-27-21` | 0.0 |
+| oracle CBT2 | `jobs/oracle/2026-09-17__00-26-39` | 1.0 |
+| nop CBT2 | `jobs/nop/2026-09-17__00-27-21` | 0.0 |
+| oracle CBT3 | `jobs/h3-oracle/2026-09-17__01-09-55` | 1.0 |
+| nop CBT3 | `jobs/h3-nop/2026-09-17__01-10-41` | 0.0 |
 
 ## Deterministic cheat oracle — PASS (reward 0)
 
 Replaced `solution/solve.sh` with `cheat/solve.sh` (`return {}`) for one oracle run, then restored the real solution:
 
 ```bash
-harbor run -p tasks/cow-btree-recover --agent oracle --env docker --yes -k 1 -n 1 -o jobs/cheat-oracle
+harbor run -p tasks/cow-btree-recover --agent oracle --env docker --yes -k 1 -n 1 -o jobs/h3-cheat-oracle
 ```
 
-Reward 0.0 (`jobs/cheat-oracle/2026-09-17__00-27-38`).
+Reward 0.0 (`jobs/h3-cheat-oracle/2026-09-17__01-11-08`).
 
 ## Standard trials (`/run`)
 
@@ -66,8 +66,10 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | --- | --- | --- | --- |
 | Codex CBT1 | 1 `jobs/run-codex-1/2026-09-16__23-53-56` | 1.0 | Genuine pass; 8/8; task too easy |
 | Codex CBT1 | 2 `jobs/run-codex-2/2026-09-17__00-02-36` | 1.0 | Genuine pass; stopped further CBT1 trials |
-| Codex CBT2 | 1–3 | pending | Hardened task |
-| Claude CBT2 | 1–3 | blocked | OAuth refresh expired |
+| Codex CBT2 | 1 `jobs/h-run-codex-1/2026-09-17__00-30-58` | 1.0 | Genuine pass; 14/14 |
+| Codex CBT2 | 2 `jobs/h-run-codex-2/2026-09-17__00-42-38` | 1.0 | Genuine pass |
+| Codex CBT3 | 1–3 | running | `jobs/c3-run-codex-*` |
+| Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
 
@@ -84,12 +86,12 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 | Config | Reward | Notes |
 | --- | --- | --- |
-| Deterministic empty recover | 0.0 | Verifier not fooled by `return {}` |
-| Codex CBT2 `/cheat` | pending | |
-| Claude CBT2 `/cheat` | blocked | Same OAuth expiry |
+| Deterministic empty recover CBT3 | 0.0 | `jobs/h3-cheat-oracle/2026-09-17__01-11-08` |
+| Codex CBT3 `/cheat` | running | After `/run` 3/3 fail |
+| Claude `/cheat` | not started | Codex first |
 
 ## Failure analysis
 
 Nop and empty-recover fail because recovery must select a checksum-valid superblock by LSN, walk interior children (not stale `right_sibling`), reconstitute prefix-compressed keys, assemble overflow chains, reject a torn newer root or torn overflow, ignore unlinked extra leaves, and keep the higher-LSN value on duplicate keys. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
 
-The CBT1 pass shows a frontier agent can transcribe a complete recovery recipe from a 60-line FORMAT.md. CBT2 keeps the instruction fair for an expert who can read the writer and the layout, but the hidden tests require composing overflow, prefix, reuse, and tear interactions rather than copying a short procedure.
+The CBT1 and CBT2 passes show a frontier agent can implement `FORMAT.md` plus `codec.decode_node` and still clear hidden images. CBT3 keeps the instruction fair, but recovery must also accept shared overflow DAGs, reject overflow pages newer than the owning leaf, decode `FLAG_DELTA` keys, and treat a kind-1 value at or under the inline cap as an invalid commit.
