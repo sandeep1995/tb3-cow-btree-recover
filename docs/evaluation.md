@@ -83,7 +83,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Codex CBT3 | 1 `jobs/c3-run-codex-1/2026-09-17__01-14-45` | 1.0 | Genuine pass; 17/17; trial 2 aborted |
 | Codex CBT4 | 1 `jobs/c4-run-codex-1/2026-09-17__01-36-42` | 1.0 | Genuine pass; 19/19; trial 2 aborted |
 | Codex CBT5 | 1 `jobs/c5-run-codex-1/2026-09-17__01-54-55` | 1.0 | Genuine pass; 21/21; suite stopped |
-| Codex CBT6 | 1–3 | running | Encode-only `/app/store/codec.py` |
+| Codex CBT6 | 1 `jobs/c6-run-codex-1/2026-09-17__02-14-31` | 1.0 | Genuine pass; 21/21; wrote its own decoder; suite stopped |
 | Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
@@ -102,11 +102,12 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Config | Reward | Notes |
 | --- | --- | --- |
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
-| Codex CBT6 `/cheat` | running | After `/run` 3/3 fail |
+| Codex CBT6 `/cheat` | not started | `/run` still passing |
+| Claude `/cheat` | not started | Codex first |
 | Claude `/cheat` | not started | Codex first |
 
 ## Failure analysis
 
 Nop and empty-recover fail because recovery must select a checksum-valid superblock by LSN, walk interior children (not stale `right_sibling`), reconstitute prefix-compressed keys, assemble overflow chains, reject a torn newer root or torn overflow, ignore unlinked extra leaves, and keep the higher-LSN value on duplicate keys. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
 
-The CBT1–CBT3 passes show a frontier agent can implement `FORMAT.md` plus `codec.decode_node` and still clear hidden images. CBT4 keeps the instruction fair. Recovery must also check overflow `child0` chunk indexes and that superblock `root_lsn` matches the root page. Codex CBT3 `/run` trial 1 passed 17/17; trial 2 was stopped so the suite could harden instead of burning remaining budget.
+Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` has now passed genuine `/run` trial 1 on every revision (CBT1–CBT6). Adding documented invariants (prefix, overflow, delta keys, overflow LSN vs leaf, shared overflow, chunk indexes, root_lsn, tombstones) and removing `decode_node` from `/app/store/codec.py` does not stop it: the agent implements `FORMAT.md` directly in about ten minutes and clears all hidden tests. Claude `/run` and `/cheat` were not started. A further Codex suite on this same complete-spec shape would burn budget without changing the outcome. The next qualitative change would have to be a larger engine whose crash behavior cannot be recovered by transcribing `FORMAT.md`, not another header field.
