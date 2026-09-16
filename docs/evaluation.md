@@ -52,6 +52,8 @@ harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -
 | nop CBT5 | `jobs/h5-nop/2026-09-17__01-53-26` | 0.0 |
 | oracle CBT6 | `jobs/h6-oracle/2026-09-17__02-12-30` | 1.0 (21/21) |
 | nop CBT6 | `jobs/h6-nop/2026-09-17__02-12-44` | 0.0 |
+| oracle engine | `jobs/e7-oracle/2026-09-17__03-01-07` | 1.0 (16/16) |
+| nop engine | `jobs/e7-nop/2026-09-17__03-02-02` | 0.0 |
 
 ## Deterministic cheat oracle — PASS (reward 0)
 
@@ -104,7 +106,9 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Config | Reward | Notes |
 | --- | --- | --- |
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
-| Codex CBT6 `/cheat` | not started | `/run` still passing |
+| Deterministic empty recover engine | 0.0 | `jobs/e7-cheat-oracle/2026-09-17__03-02-20` |
+| Codex engine `/run` | pending | first probe after engine rewrite |
+| Codex CBT6 `/cheat` | not started | `/run` still passing on CBT6 |
 | Claude `/cheat` | not started | Codex first |
 
 ## Failure analysis
