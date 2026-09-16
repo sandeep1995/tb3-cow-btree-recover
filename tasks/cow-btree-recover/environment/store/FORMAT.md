@@ -49,9 +49,10 @@ The full key is `previous_key[:LCP] + rest`. Reconstituted keys are strictly inc
 
 Then each record's value:
 
-- kind `uint8`: `0` inline value, `1` overflow value
+- kind `uint8`: `0` inline value, `1` overflow value, `2` tombstone
 - inline: `uint16` length then bytes, and the length must be at most 48
 - overflow: `uint32` first overflow page, `uint32` total value length, and the length must be greater than 48
+- tombstone: no payload; the key is absent from the committed map unless another reachable record of that key has a higher leaf LSN (or the same LSN and a lower page id that is not a tombstone)
 
 Suffixes reconstituted with the page prefix and deltas are strictly increasing. Values are opaque byte strings.
 

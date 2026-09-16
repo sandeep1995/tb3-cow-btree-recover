@@ -13,9 +13,11 @@ The task was then hardened to CBT2: prefix-compressed leaves, overflow chains, f
 
 The task was hardened again to CBT3: delta-coded subsequent leaf keys (`FLAG_DELTA`), overflow LSN at most the owning leaf LSN, shared overflow DAGs, and kind-1 values that must be longer than the inline cap. Hidden tests grew from 14 to 17. Codex `/run` trial 1 passed 17/17; trial 2 was aborted.
 
-The task was hardened again to CBT4: overflow `child0` is a consecutive chunk index, and the superblock stores `root_lsn` that must match the root page. Hidden tests grew from 17 to 19.
+The task was hardened again to CBT4: overflow `child0` is a consecutive chunk index, and the superblock stores `root_lsn` that must match the root page. Hidden tests grew from 17 to 19. Codex `/run` trial 1 passed 19/19; trial 2 was aborted.
 
-## Static checks — PASS (CBT4)
+The task was hardened again to CBT5: leaf kind `2` tombstones persist after delete. Hidden tests grew from 19 to 21.
+
+## Static checks — PASS (CBT5)
 
 ```bash
 ./scripts/run-static-checks.sh tasks/cow-btree-recover

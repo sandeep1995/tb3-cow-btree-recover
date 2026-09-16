@@ -91,6 +91,24 @@ class Store:
         self.committed[key] = value
         self._commit()
 
+    def delete(self, key: bytes) -> None:
+        self.lsn += 1
+        if self.root is None:
+            return
+        split, new_root = self._insert(self.root, key, None)
+        self.root = new_root
+        if split is not None:
+            sep, right = split
+            self.root = MNode(
+                ptype=TYPE_INTERIOR,
+                keys=[sep],
+                children=[new_root, right],
+                dirty=True,
+                lsn=self.lsn,
+            )
+        self.committed.pop(key, None)
+        self._commit()
+
     def _insert(self, node: MNode, key: bytes, value: bytes):
         node = self._touch(node)
         if node.ptype == TYPE_LEAF:
@@ -130,7 +148,14 @@ class Store:
         node.vals.insert(i, value)
         node.lsn = self.lsn
         node.dirty = True
-        packed = [(v if len(v) <= INLINE_VALUE_MAX else OverflowRef(0, len(v))) for v in node.vals]
+        packed = []
+        for v in node.vals:
+            if v is None:
+                packed.append(None)
+            elif len(v) > INLINE_VALUE_MAX:
+                packed.append(OverflowRef(0, len(v)))
+            else:
+                packed.append(v)
         if leaf_encoded_size(node.keys, packed) <= PAGE_SIZE - 8:
             return None
         return self._split_leaf(node)
@@ -235,7 +260,7 @@ class Store:
         if node.ptype == TYPE_LEAF and node.dirty:
             node.overflow_heads = []
             for val in node.vals:
-                if len(val) > INLINE_VALUE_MAX:
+                if val is not None and len(val) > INLINE_VALUE_MAX:
                     chain = self._ov_share.get(val)
                     if chain is None:
                         nchunks = (len(val) + OVERFLOW_PAYLOAD_MAX - 1) // OVERFLOW_PAYLOAD_MAX
@@ -264,6 +289,9 @@ class Store:
             return
         encoded_vals: list[bytes | OverflowRef] = []
         for val, chain in zip(node.vals, node.overflow_heads):
+            if val is None:
+                encoded_vals.append(None)
+                continue
             if not chain:
                 encoded_vals.append(val)
                 continue

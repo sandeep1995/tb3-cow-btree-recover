@@ -124,6 +124,17 @@ def test_root_lsn_mismatch():
     assert all(v.startswith(b"v") for v in got.values())
 
 
+def test_tombstone_removes_key():
+    got = _eq("tombstone.db")
+    assert b"user:0000" not in got
+    assert got
+
+
+def test_tombstone_torn_falls_back():
+    got = _eq("tombstone_torn.db")
+    assert b"user:0000" in got
+
+
 def test_recovery_does_not_mutate_image():
     path = IMAGES / "stale_sibling.db"
     before = _digest(path)

@@ -70,7 +70,9 @@ def _try_slot(pages: list[bytes], slot: int):
         if node.ptype != TYPE_LEAF:
             continue
         for key, val in zip(node.keys, node.vals):
-            if isinstance(val, OverflowRef):
+            if val is None:
+                assembled = None
+            elif isinstance(val, OverflowRef):
                 if val.length <= INLINE_VALUE_MAX:
                     return None
                 assembled = _assemble_overflow(
@@ -86,7 +88,7 @@ def _try_slot(pages: list[bytes], slot: int):
             prev = best.get(key)
             if prev is None or rec[0] > prev[0] or (rec[0] == prev[0] and rec[1] < prev[1]):
                 best[key] = rec
-    return sb["lsn"], {k: rec[2] for k, rec in best.items()}
+    return sb["lsn"], {k: rec[2] for k, rec in best.items() if rec[2] is not None}
 
 
 def _walk_tree(pages, pid, sb_lsn, page_count, reachable, tree_seen) -> bool:
@@ -118,6 +120,8 @@ def _walk_tree(pages, pid, sb_lsn, page_count, reachable, tree_seen) -> bool:
                 return False
         return True
     for val in node.vals:
+        if val is None:
+            continue
         if isinstance(val, OverflowRef):
             if val.length <= INLINE_VALUE_MAX:
                 return False

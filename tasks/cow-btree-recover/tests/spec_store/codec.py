@@ -11,6 +11,7 @@ from .format import (
     INLINE_VALUE_MAX,
     KIND_INLINE,
     KIND_OVERFLOW,
+    KIND_TOMBSTONE,
     NO_PAGE,
     OVERFLOW_PAYLOAD_MAX,
     PAGE_SIZE,
@@ -72,7 +73,7 @@ class Node:
     ptype: int
     lsn: int
     keys: list[bytes]
-    vals: list[bytes | OverflowRef] = field(default_factory=list)
+    vals: list[bytes | OverflowRef | None] = field(default_factory=list)
     children: list[int] = field(default_factory=list)
     right_sibling: int = NO_PAGE
     page_id: int = NO_PAGE
@@ -162,7 +163,7 @@ def encode_free(nxt: int, lsn: int) -> bytes:
     return apply_checksum(page)
 
 
-def encode_leaf(keys: list[bytes], vals: list[bytes | OverflowRef], lsn: int, right_sibling: int) -> bytes:
+def encode_leaf(keys: list[bytes], vals: list[bytes | OverflowRef | None], lsn: int, right_sibling: int) -> bytes:
     prefix = common_prefix(keys)
     flags = FLAG_PREFIX if prefix else 0
     if len(keys) > 1:
@@ -192,7 +193,10 @@ def encode_leaf(keys: list[bytes], vals: list[bytes | OverflowRef], lsn: int, ri
             off = _write_bytes(page, off, key[copied:])
         prev = key
         _need(page, off, 1)
-        if isinstance(val, OverflowRef):
+        if val is None:
+            page[off] = KIND_TOMBSTONE
+            off += 1
+        elif isinstance(val, OverflowRef):
             page[off] = KIND_OVERFLOW
             off += 1
             _need(page, off, 8)
@@ -269,6 +273,8 @@ def decode_node(page: bytes, page_id: int) -> Node:
                 ov, off = _read_u32(page, off)
                 total, off = _read_u32(page, off)
                 vals.append(OverflowRef(ov, total))
+            elif kind == KIND_TOMBSTONE:
+                vals.append(None)
             else:
                 raise ValueError("bad value kind")
         if any(left >= right for left, right in zip(keys, keys[1:])):
@@ -296,7 +302,7 @@ def decode_node(page: bytes, page_id: int) -> Node:
     )
 
 
-def leaf_encoded_size(keys: list[bytes], vals: list[bytes | OverflowRef]) -> int:
+def leaf_encoded_size(keys: list[bytes], vals: list[bytes | OverflowRef | None]) -> int:
     prefix = common_prefix(keys)
     size = HEADER_SIZE
     if prefix:
@@ -308,6 +314,8 @@ def leaf_encoded_size(keys: list[bytes], vals: list[bytes | OverflowRef]) -> int
         else:
             size += 2 + 2 + (len(key) - _lcp(prev, key)) + 1
         prev = key
+        if val is None:
+            continue
         if isinstance(val, OverflowRef):
             size += 8
         else:
