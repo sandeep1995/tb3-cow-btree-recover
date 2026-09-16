@@ -5,6 +5,7 @@ import struct
 from dataclasses import dataclass, field
 
 from .format import (
+    FLAG_DELTA,
     FLAG_PREFIX,
     HEADER_SIZE,
     INLINE_VALUE_MAX,
@@ -83,16 +84,20 @@ class Node:
         return len(self.keys)
 
 
+def _lcp(left: bytes, right: bytes) -> int:
+    n = min(len(left), len(right))
+    i = 0
+    while i < n and left[i] == right[i]:
+        i += 1
+    return i
+
+
 def common_prefix(keys: list[bytes]) -> bytes:
     if not keys:
         return b""
     prefix = keys[0]
     for key in keys[1:]:
-        n = min(len(prefix), len(key))
-        i = 0
-        while i < n and prefix[i] == key[i]:
-            i += 1
-        prefix = prefix[:i]
+        prefix = prefix[:_lcp(prefix, key)]
         if not prefix:
             break
     return prefix
@@ -154,6 +159,8 @@ def encode_free(nxt: int, lsn: int) -> bytes:
 def encode_leaf(keys: list[bytes], vals: list[bytes | OverflowRef], lsn: int, right_sibling: int) -> bytes:
     prefix = common_prefix(keys)
     flags = FLAG_PREFIX if prefix else 0
+    if len(keys) > 1:
+        flags |= FLAG_DELTA
     page = bytearray(PAGE_SIZE)
     page[:HEADER_SIZE] = pack_header(
         ptype=TYPE_LEAF,
@@ -165,10 +172,19 @@ def encode_leaf(keys: list[bytes], vals: list[bytes | OverflowRef], lsn: int, ri
     off = HEADER_SIZE
     if flags & FLAG_PREFIX:
         off = _write_bytes(page, off, prefix)
+    prev: bytes | None = None
     for key, val in zip(keys, vals):
         if not key.startswith(prefix):
             raise ValueError("key missing page prefix")
-        off = _write_bytes(page, off, key[len(prefix) :])
+        if prev is None:
+            off = _write_bytes(page, off, key[len(prefix) :])
+        else:
+            copied = _lcp(prev, key)
+            _need(page, off, 2)
+            struct.pack_into("<H", page, off, copied)
+            off += 2
+            off = _write_bytes(page, off, key[copied:])
+        prev = key
         _need(page, off, 1)
         if isinstance(val, OverflowRef):
             page[off] = KIND_OVERFLOW
@@ -216,12 +232,30 @@ def decode_node(page: bytes, page_id: int) -> Node:
     children: list[int] = []
     prefix = b""
     if hdr["type"] == TYPE_LEAF:
-        if hdr["flags"] & FLAG_PREFIX:
+        flags = hdr["flags"]
+        if flags & ~(FLAG_PREFIX | FLAG_DELTA):
+            raise ValueError("bad leaf flags")
+        if hdr["nkeys"] > 1:
+            if not (flags & FLAG_DELTA):
+                raise ValueError("delta flag required")
+        elif flags & FLAG_DELTA:
+            raise ValueError("delta flag forbidden")
+        if flags & FLAG_PREFIX:
             prefix, off = _read_bytes(page, off)
-        for _ in range(hdr["nkeys"]):
-            suffix, off = _read_bytes(page, off)
+        prev: bytes | None = None
+        for i in range(hdr["nkeys"]):
+            if i == 0:
+                suffix, off = _read_bytes(page, off)
+                key = prefix + suffix
+            else:
+                copied, off = _read_u16(page, off)
+                rest, off = _read_bytes(page, off)
+                if prev is None or copied > len(prev):
+                    raise ValueError("bad delta lcp")
+                key = prev[:copied] + rest
             kind, off = _read_u8(page, off)
-            keys.append(prefix + suffix)
+            keys.append(key)
+            prev = key
             if kind == KIND_INLINE:
                 val, off = _read_bytes(page, off)
                 vals.append(val)
@@ -261,8 +295,13 @@ def leaf_encoded_size(keys: list[bytes], vals: list[bytes | OverflowRef]) -> int
     size = HEADER_SIZE
     if prefix:
         size += 2 + len(prefix)
+    prev: bytes | None = None
     for key, val in zip(keys, vals):
-        size += 2 + (len(key) - len(prefix)) + 1
+        if prev is None:
+            size += 2 + (len(key) - len(prefix)) + 1
+        else:
+            size += 2 + 2 + (len(key) - _lcp(prev, key)) + 1
+        prev = key
         if isinstance(val, OverflowRef):
             size += 8
         else:

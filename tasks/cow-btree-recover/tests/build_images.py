@@ -11,7 +11,7 @@ _ENV = Path(__file__).resolve().parents[1] / "environment"
 if str(_ENV) not in sys.path:
     sys.path.insert(0, str(_ENV))
 
-from store.codec import decode_node, decode_super, encode_leaf, encode_super
+from store.codec import OverflowRef, decode_node, decode_overflow, decode_super, encode_leaf, encode_overflow, encode_super
 from store.format import NO_PAGE, PAGE_SIZE, TYPE_LEAF, header_ok, unpack_header
 from store.tree import Store, reopen_empty
 
@@ -221,6 +221,72 @@ def interacting(path: Path) -> None:
     _ = older
 
 
+def overflow_lsn_vs_leaf(path: Path) -> None:
+    st = reopen_empty(path)
+    for i in range(8):
+        st.insert(f"k{i:02d}".encode(), b"small")
+    st.insert(b"k00", b"B" * 90)
+    pages = _pages(path.read_bytes())
+    newest = _latest_slot(pages)
+    sb = decode_super(pages[newest])
+    leaf = next(
+        n for n in _walk_leaves(pages, sb["root_page"]) if any(isinstance(v, OverflowRef) for v in n.vals)
+    )
+    if leaf.lsn < 1:
+        raise SystemExit("leaf lsn too small")
+    pages[leaf.page_id] = encode_leaf(leaf.keys, leaf.vals, leaf.lsn - 1, leaf.right_sibling)
+    _write(path, _join(pages))
+
+
+def short_overflow(path: Path) -> None:
+    st = reopen_empty(path)
+    for i in range(8):
+        st.insert(f"k{i:02d}".encode(), b"small")
+    st.insert(b"k00", b"B" * 90)
+    pages = _pages(path.read_bytes())
+    newest = _latest_slot(pages)
+    sb = decode_super(pages[newest])
+    leaf = next(
+        n for n in _walk_leaves(pages, sb["root_page"]) if any(isinstance(v, OverflowRef) for v in n.vals)
+    )
+    pages.append(encode_overflow(b"X" * 20, sb["lsn"], NO_PAGE))
+    new_vals: list = []
+    for val in leaf.vals:
+        if isinstance(val, OverflowRef):
+            new_vals.append(OverflowRef(len(pages) - 1, 20))
+        else:
+            new_vals.append(val)
+    pages[leaf.page_id] = encode_leaf(leaf.keys, new_vals, leaf.lsn, leaf.right_sibling)
+    pages[newest] = encode_super(
+        root_page=sb["root_page"],
+        page_count=len(pages),
+        entry_count=sb["entry_count"],
+        slot=sb["slot"],
+        lsn=sb["lsn"],
+        free_head=sb["free_head"],
+    )
+    _write(path, _join(pages))
+
+
+def shared_overflow(path: Path) -> None:
+    st = reopen_empty(path)
+    blob = b"SHARE" * 40
+    st.insert(b"left-key", blob)
+    st.insert(b"right-key", blob)
+    pages = _pages(path.read_bytes())
+    sb = decode_super(pages[_latest_slot(pages)])
+    refs = [
+        val
+        for node in _walk_leaves(pages, sb["root_page"])
+        for val in node.vals
+        if isinstance(val, OverflowRef)
+    ]
+    if len(refs) < 2:
+        raise SystemExit("need two overflow records")
+    if refs[0].page_id != refs[1].page_id:
+        raise SystemExit("overflow not shared")
+
+
 def crashed_example(path: Path) -> None:
     st = _prefix_store(path, 90)
     st.insert(b"user:0001", b"Y" * 90)
@@ -243,9 +309,17 @@ def main() -> None:
     page_reuse(img / "page_reuse.db")
     unlinked_right(img / "unlinked_right.db")
     interacting(img / "interact.db")
+    overflow_lsn_vs_leaf(img / "ov_lsn_leaf.db")
+    short_overflow(img / "short_ov.db")
+    shared_overflow(img / "shared_ov.db")
     data = root / "environment" / "data"
     data.mkdir(exist_ok=True)
     crashed_example(data / "crashed.db")
+    spec = root / "tests" / "spec_store"
+    env = root / "environment" / "store"
+    for name in ("format.py", "FORMAT.md", "codec.py", "pager.py"):
+        shutil.copy2(env / name, spec / name)
+    shutil.copy2(root / "solution" / "recover.py", spec / "recover.py")
     print("wrote", img, "and", data / "crashed.db")
 
 

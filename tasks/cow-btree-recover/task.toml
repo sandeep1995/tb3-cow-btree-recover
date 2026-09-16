@@ -5,7 +5,7 @@ artifacts = ["/app/"]
 
 [task]
 name = "terminal-bench/cow-btree-recover"
-description = "Recover a copy-on-write B+tree after crash, including overflow chains, prefix-compressed leaves, page reuse, and interacting torn writes."
+description = "Recover a copy-on-write B+tree after crash, including overflow chains, delta-coded leaf keys, page reuse, and interacting torn writes."
 authors = [{ name = "Sandeep Acharya", email = "i.am.sandeep.acharya@gmail.com" }]
 
 [metadata]
@@ -15,9 +15,9 @@ category = "Software"
 subcategory = "Databases"
 tags = ["storage-engine", "crash-recovery", "b+tree", "copy-on-write", "debugging"]
 expert_time_estimate_hours = 8
-difficulty_explanation = "Crash recovery for a path-copying B+tree is storage-engine work: the committed map is the child-and-overflow graph of a checksum-valid superblock, not sibling links or recycled pages. Prefix-compressed leaves, overflow chains, page reuse, interrupted-split duplicates, and a torn newer root interact, so a recoverer transcribed from a short layout note still fails hidden images. The public image is generated with a correct writer and then crashed."
-solution_explanation = "Choose the well-formed superblock with the highest LSN (slot 1 on ties). Well-formed means the superblock checksums and every page reachable through interior children and overflow chains checksums with the expected type and LSN at most the superblock LSN. Reconstitute leaf keys with the page prefix, assemble overflow values, and ignore sibling and freelist pointers. On duplicate reachable keys keep the highest page LSN, then the lower page id. If neither slot is valid, return an empty map and never write the image."
-verification_explanation = "The verifier restores protected format files, imports the agent's recover_store, and compares it to a spec recoverer on hidden images covering stale siblings, reused sibling targets, torn newer roots and overflow, prefix-compressed leaves, duplicate keys, unlinked extra leaves, empty images, and slot-1 latest commits. Reward is binary."
+difficulty_explanation = "Crash recovery for a path-copying B+tree is storage-engine work: the committed map is the child-and-overflow graph of a checksum-valid superblock, not sibling links or recycled pages. Prefix and delta-coded leaves, overflow chains that may be shared, overflow LSN relative to the owning leaf, page reuse, interrupted-split duplicates, and a torn newer root interact, so a recoverer that only transcribes a short layout note still fails hidden images. The public image is generated with a correct writer and then crashed."
+solution_explanation = "Choose the well-formed superblock with the highest LSN (slot 1 on ties). Well-formed means the superblock checksums and every page reachable through interior children and overflow chains checksums with the expected type, tree pages unique, overflow LSN at most both the superblock LSN and the owning leaf LSN, kind-1 values longer than the inline cap, and delta keys that decode. Reconstitute leaf keys with the page prefix and deltas, assemble overflow values (shared chains allowed), and ignore sibling and freelist pointers. On duplicate reachable keys keep the highest page LSN, then the lower page id. If neither slot is valid, return an empty map and never write the image."
+verification_explanation = "The verifier restores protected format files, imports the agent's recover_store, and compares it to a spec recoverer on hidden images covering stale siblings, reused sibling targets, torn newer roots and overflow, prefix and delta-coded leaves, overflow LSN newer than the owning leaf, short kind-1 values, shared overflow chains, duplicate keys, unlinked extra leaves, empty images, and slot-1 latest commits. Reward is binary."
 relevant_experience = "Hiring-evaluation task: original CoW B+tree format and recovery invariants modeled on production copy-on-write stores, with a deterministic spec recoverer and synthetic crash images."
 
 [verifier]

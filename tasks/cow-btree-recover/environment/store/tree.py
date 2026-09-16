@@ -69,6 +69,8 @@ class Store:
         self.free: list[int] = []
         self.slot_live: list[set[int]] = [set(), set()]
         self.high_water = 2
+        self._ov_share: dict[bytes, list[int]] = {}
+        self._ov_new: set[int] = set()
 
     def insert(self, key: bytes, value: bytes) -> None:
         self.lsn += 1
@@ -177,6 +179,9 @@ class Store:
     def _commit(self) -> None:
         if self.root is None:
             return
+        self._ov_share = {}
+        self._ov_new = set()
+        self._collect_overflow(self.root)
         used: set[int] = set()
         self._assign_pages(self.root, used)
         self._write_dirty(self.root)
@@ -208,6 +213,17 @@ class Store:
         self.next_slot = other
         self.root.dirty = False
 
+    def _collect_overflow(self, node: MNode) -> None:
+        if node.ptype == TYPE_INTERIOR:
+            for ch in node.children:
+                self._collect_overflow(ch)
+            return
+        if node.dirty:
+            return
+        for val, chain in zip(node.vals, node.overflow_heads):
+            if chain:
+                self._ov_share[val] = chain
+
     def _assign_pages(self, node: MNode, used: set[int]) -> None:
         if node.ptype == TYPE_INTERIOR:
             for ch in node.children:
@@ -219,10 +235,14 @@ class Store:
             node.overflow_heads = []
             for val in node.vals:
                 if len(val) > INLINE_VALUE_MAX:
-                    nchunks = (len(val) + OVERFLOW_PAYLOAD_MAX - 1) // OVERFLOW_PAYLOAD_MAX
-                    heads = [self._alloc() for _ in range(nchunks)]
-                    node.overflow_heads.append(heads)
-                    used.update(heads)
+                    chain = self._ov_share.get(val)
+                    if chain is None:
+                        nchunks = (len(val) + OVERFLOW_PAYLOAD_MAX - 1) // OVERFLOW_PAYLOAD_MAX
+                        chain = [self._alloc() for _ in range(nchunks)]
+                        self._ov_share[val] = chain
+                        self._ov_new.update(chain)
+                    node.overflow_heads.append(chain)
+                    used.update(chain)
                 else:
                     node.overflow_heads.append([])
         elif node.ptype == TYPE_LEAF:
@@ -246,11 +266,12 @@ class Store:
             if not chain:
                 encoded_vals.append(val)
                 continue
-            chunks = [val[i : i + OVERFLOW_PAYLOAD_MAX] for i in range(0, len(val), OVERFLOW_PAYLOAD_MAX)]
-            nxt = NO_PAGE
-            for pid, chunk in zip(reversed(chain), reversed(chunks)):
-                self.pager.write(pid, encode_overflow(chunk, node.lsn, nxt))
-                nxt = pid
+            if chain[0] in self._ov_new:
+                chunks = [val[i : i + OVERFLOW_PAYLOAD_MAX] for i in range(0, len(val), OVERFLOW_PAYLOAD_MAX)]
+                nxt = NO_PAGE
+                for pid, chunk in zip(reversed(chain), reversed(chunks)):
+                    self.pager.write(pid, encode_overflow(chunk, node.lsn, nxt))
+                    nxt = pid
             encoded_vals.append(OverflowRef(chain[0], len(val)))
         right_id = node.right.page_id if node.right is not None else NO_PAGE
         self.pager.write(node.page_id, encode_leaf(node.keys, encoded_vals, node.lsn, right_id))
