@@ -2,8 +2,8 @@
 platform linux -- Python 3.13.13, pytest-9.1.1, pluggy-1.6.0
 rootdir: /tests
 plugins: json-ctrf-0.5.2
-collected 8 items
-........                                                                 [100%]
+collected 14 items
+..............                                                           [100%]
 ==================================== PASSES ====================================
 =========================== short test summary info ============================
 PASSED tests/test_outputs.py::test_format_py_unchanged
@@ -13,6 +13,12 @@ PASSED tests/test_outputs.py::test_stale_sibling_image
 PASSED tests/test_outputs.py::test_torn_newer_superblock
 PASSED tests/test_outputs.py::test_duplicate_key_lsn
 PASSED tests/test_outputs.py::test_latest_superblock_slot1
+PASSED tests/test_outputs.py::test_overflow_values
+PASSED tests/test_outputs.py::test_torn_overflow_invalidates_newer
+PASSED tests/test_outputs.py::test_prefix_compressed_leaves
+PASSED tests/test_outputs.py::test_page_reuse_stale_sibling
+PASSED tests/test_outputs.py::test_unlinked_right_sibling
+PASSED tests/test_outputs.py::test_interacting_crashes
 PASSED tests/test_outputs.py::test_recovery_does_not_mutate_image
-============================== 8 passed in 0.09s ===============================
-CTRF verification: 8/8 passed
+============================== 14 passed in 0.08s ==============================
+CTRF verification: 14/14 passed

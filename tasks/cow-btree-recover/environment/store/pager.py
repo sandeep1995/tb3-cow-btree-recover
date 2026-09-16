@@ -26,18 +26,14 @@ class Pager:
     def write(self, page_id: int, page: bytes) -> None:
         if len(page) != PAGE_SIZE:
             raise ValueError("bad page size")
+        needed = (page_id + 1) * PAGE_SIZE
+        if self.path.stat().st_size < needed:
+            with self.path.open("ab") as f:
+                f.write(b"\x00" * (needed - self.path.stat().st_size))
         with self.path.open("r+b") as f:
             f.seek(page_id * PAGE_SIZE)
             f.write(page)
             f.flush()
-
-    def append(self, page: bytes) -> int:
-        if len(page) != PAGE_SIZE:
-            raise ValueError("bad page size")
-        with self.path.open("ab") as f:
-            f.write(page)
-            f.flush()
-            return (f.tell() // PAGE_SIZE) - 1
 
     def read_all(self) -> list[bytes]:
         data = self.path.read_bytes()

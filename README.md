@@ -2,7 +2,7 @@
 
 Independent Terminal-Bench 3 task for a Founding Engineer hiring evaluation. **Klavis AI is not affiliated with Terminal-Bench.** There is no IP transfer. Keep this repository under your control (GitHub or otherwise). This repo does **not** open a PR against `harbor-framework/terminal-bench`.
 
-Task: `tasks/cow-btree-recover` — repair crash recovery for an original copy-on-write B+tree (dual superblocks, page checksums, stale sibling pointers, interrupted-split duplicates).
+Task: `tasks/cow-btree-recover` — repair crash recovery for an original copy-on-write B+tree (dual superblocks, prefix-compressed leaves, overflow chains, page reuse, stale siblings, interrupted-split duplicates).
 
 ## Layout
 
@@ -112,14 +112,12 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 ## Pushing to GitHub
 
-This environment's git remote is an Origin/Cursor remote, not GitHub. To publish under your GitHub account:
+Public repo: https://github.com/sandeep1995/tb3-cow-btree-recover
 
 ```bash
-git remote add github git@github.com:<you>/<repo>.git
-git push -u github cursor/cow-btree-recover-bc11
+git remote add github git@github.com:sandeep1995/tb3-cow-btree-recover.git
+git push -u github cursor/cow-btree-recover-bc11:main
 ```
-
-If SSH/HTTPS GitHub auth is missing, create an empty GitHub repo and push from a machine where `gh auth` or SSH keys work. Do not open a PR to `harbor-framework/terminal-bench` unless you independently choose to contribute.
 
 ## What the task asks
 

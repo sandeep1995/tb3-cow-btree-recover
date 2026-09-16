@@ -8,29 +8,24 @@ import zlib
 
 PAGE_SIZE = 4096
 HEADER_SIZE = 32
-MAGIC = b"CBT1"
+MAGIC = b"CBT2"
 
 TYPE_SUPER = 1
 TYPE_INTERIOR = 2
 TYPE_LEAF = 3
+TYPE_OVERFLOW = 4
+TYPE_FREE = 5
 
 NO_PAGE = 0xFFFFFFFF
 SUPER_SLOTS = (0, 1)
 
-MAX_KEYS = 4
-MAX_KEY_LEN = 64
-MAX_VAL_LEN = 128
+FLAG_PREFIX = 0x01
+KIND_INLINE = 0
+KIND_OVERFLOW = 1
 
-# Header layout, little-endian:
-#  0:4   magic
-#  4     type u8
-#  5     flags u8
-#  6:8   nkeys u16
-#  8:16  lsn u64
-# 16:20  checksum u32
-# 20:24  right_sibling u32
-# 24:28  child0 u32
-# 28:32  reserved u32
+INLINE_VALUE_MAX = 48
+OVERFLOW_PAYLOAD_MAX = PAGE_SIZE - HEADER_SIZE - 2
+
 _HEADER = struct.Struct("<4sBBHQIIII")
 
 
@@ -84,5 +79,4 @@ def header_ok(page: bytes) -> bool:
     hdr = unpack_header(page)
     if hdr["magic"] != MAGIC:
         return False
-    expected = checksum_page(page)
-    return expected == hdr["checksum"]
+    return checksum_page(page) == hdr["checksum"]
