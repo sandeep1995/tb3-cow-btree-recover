@@ -91,6 +91,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Codex CBT5 | 1 `jobs/c5-run-codex-1/2026-09-17__01-54-55` | 1.0 | Genuine pass; 21/21; suite stopped |
 | Codex CBT6 | 1 `jobs/c6-run-codex-1/2026-09-17__02-14-31` | 1.0 | Genuine pass; 21/21; wrote its own decoder; suite stopped |
 | Codex engine | 1 `jobs/e7-run-codex-1/2026-09-17__03-04-10` | 1.0 | Genuine pass; 16/16; required WAL COMMIT on the super chain; writer then changed to COMMIT-before-super |
+| Codex COMMIT-before-super | 1 `jobs/e8-run-codex-1/2026-09-17__03-22-54` | 1.0 | Genuine pass; 16/16; scanned WAL BEGIN/PAGES/COMMIT and installed a commit with no later super |
 | Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
@@ -112,7 +113,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Deterministic empty recover engine | 0.0 | `jobs/e7-cheat-oracle/2026-09-17__03-02-20` |
 | Deterministic empty recover COMMIT-before-super | 0.0 | `jobs/e8-cheat-oracle/2026-09-17__03-21-51` |
 | Codex engine `/run` 1 | 1.0 | Genuine pass 16/16; `jobs/e7-run-codex-1/2026-09-17__03-04-10`; agent read commit.py and required WAL COMMIT on the super chain |
-| Codex engine `/run` after COMMIT-before-super | pending | writer now treats COMMIT as durable without a later superblock |
+| Codex engine `/run` after COMMIT-before-super | 1.0 | `jobs/e8-run-codex-1/2026-09-17__03-22-54`; genuine 16/16 |
 | Codex CBT6 `/cheat` | not started | `/run` still passing on CBT6 |
 | Claude `/cheat` | not started | Codex first |
 
@@ -120,4 +121,4 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 Nop and empty-recover fail because recovery must honor the writer's WAL commit protocol, ignore uncommitted pages, walk children rather than stale siblings, omit tombstones, and assemble shared overflow chains. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
 
-Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed genuine `/run` trial 1 on every FORMAT-checklist revision (CBT1–CBT6). The engine rewrite drops that strategy. Claude `/run` and `/cheat` stay blocked until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.
+Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed genuine `/run` trial 1 on every FORMAT-checklist revision (CBT1–CBT6) and on both engine-protocol probes (super-then-COMMIT, then COMMIT-before-super). It reads `/app/store/btree/commit.py` and `/app/store/wal/` and patches `recovery/`. Claude `/run` and `/cheat` stay blocked until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.
