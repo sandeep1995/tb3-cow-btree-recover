@@ -15,9 +15,11 @@ The task was hardened again to CBT3: delta-coded subsequent leaf keys (`FLAG_DEL
 
 The task was hardened again to CBT4: overflow `child0` is a consecutive chunk index, and the superblock stores `root_lsn` that must match the root page. Hidden tests grew from 17 to 19. Codex `/run` trial 1 passed 19/19; trial 2 was aborted.
 
-The task was hardened again to CBT5: leaf kind `2` tombstones persist after delete. Hidden tests grew from 19 to 21.
+The task was hardened again to CBT5: leaf kind `2` tombstones persist after delete. Hidden tests grew from 19 to 21. Codex `/run` trial 1 passed 21/21; the suite stopped.
 
-## Static checks — PASS (CBT5)
+The task was hardened again to CBT6: `/app/store/codec.py` is encode-only. Agents must parse `FORMAT.md` themselves. The oracle decoder lives under `/solution` only.
+
+## Static checks — PASS (CBT6)
 
 ```bash
 ./scripts/run-static-checks.sh tasks/cow-btree-recover
@@ -46,6 +48,8 @@ harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -
 | nop CBT4 | `jobs/h4-nop/2026-09-17__01-34-01` | 0.0 |
 | oracle CBT5 | `jobs/h5-oracle/2026-09-17__01-53-12` | 1.0 (21/21) |
 | nop CBT5 | `jobs/h5-nop/2026-09-17__01-53-26` | 0.0 |
+| oracle CBT6 | `jobs/h6-oracle/2026-09-17__02-12-30` | 1.0 (21/21) |
+| nop CBT6 | `jobs/h6-nop/2026-09-17__02-12-44` | 0.0 |
 
 ## Deterministic cheat oracle — PASS (reward 0)
 
@@ -78,7 +82,8 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Codex CBT2 | 2 `jobs/h-run-codex-2/2026-09-17__00-42-38` | 1.0 | Genuine pass |
 | Codex CBT3 | 1 `jobs/c3-run-codex-1/2026-09-17__01-14-45` | 1.0 | Genuine pass; 17/17; trial 2 aborted |
 | Codex CBT4 | 1 `jobs/c4-run-codex-1/2026-09-17__01-36-42` | 1.0 | Genuine pass; 19/19; trial 2 aborted |
-| Codex CBT5 | 1–3 | running | Tombstones after CBT4 pass |
+| Codex CBT5 | 1 `jobs/c5-run-codex-1/2026-09-17__01-54-55` | 1.0 | Genuine pass; 21/21; suite stopped |
+| Codex CBT6 | 1–3 | running | Encode-only `/app/store/codec.py` |
 | Claude | 1–3 | not started | Codex first |
 
 ## Adversarial trials (`/cheat`)
@@ -96,8 +101,8 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 | Config | Reward | Notes |
 | --- | --- | --- |
-| Deterministic empty recover CBT5 | 0.0 | `jobs/h5-cheat-oracle/2026-09-17__01-53-49` |
-| Codex CBT5 `/cheat` | running | After `/run` 3/3 fail |
+| Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
+| Codex CBT6 `/cheat` | running | After `/run` 3/3 fail |
 | Claude `/cheat` | not started | Codex first |
 
 ## Failure analysis

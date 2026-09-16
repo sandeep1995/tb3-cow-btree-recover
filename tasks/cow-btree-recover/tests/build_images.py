@@ -7,11 +7,16 @@ import shutil
 import sys
 from pathlib import Path
 
-_ENV = Path(__file__).resolve().parents[1] / "environment"
+_ROOT = Path(__file__).resolve().parents[1]
+_ENV = _ROOT / "environment"
+_TESTS = Path(__file__).resolve().parent
 if str(_ENV) not in sys.path:
     sys.path.insert(0, str(_ENV))
+if str(_TESTS) not in sys.path:
+    sys.path.insert(0, str(_TESTS))
 
-from store.codec import OverflowRef, decode_node, decode_overflow, decode_super, encode_leaf, encode_overflow, encode_super
+from spec_store.codec import OverflowRef, decode_node, decode_overflow, decode_super
+from store.codec import encode_leaf, encode_overflow, encode_super
 from store.format import NO_PAGE, PAGE_SIZE, TYPE_LEAF, header_ok, unpack_header
 from store.tree import Store, reopen_empty
 
@@ -361,9 +366,10 @@ def main() -> None:
     crashed_example(data / "crashed.db")
     spec = root / "tests" / "spec_store"
     env = root / "environment" / "store"
-    for name in ("format.py", "FORMAT.md", "codec.py", "pager.py"):
+    for name in ("format.py", "FORMAT.md", "pager.py"):
         shutil.copy2(env / name, spec / name)
     shutil.copy2(root / "solution" / "recover.py", spec / "recover.py")
+    shutil.copy2(root / "solution" / "decode_lib.py", spec / "decode_lib.py")
     print("wrote", img, "and", data / "crashed.db")
 
 

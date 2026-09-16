@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .codec import OverflowRef, decode_node, decode_overflow, decode_super
+from .decode_lib import OverflowRef, decode_node, decode_overflow, decode_super
 from .format import (
     FLAG_DELTA,
     FLAG_PREFIX,
