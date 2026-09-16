@@ -97,7 +97,7 @@ def test_interacting_crashes():
 def test_overflow_lsn_vs_leaf():
     got = _eq("ov_lsn_leaf.db")
     assert b"B" * 90 not in got.values()
-    assert got[b"k00"] == b"small"
+    assert got[b"user:0000"] == b"v0000" + b"*" * 36
 
 
 def test_short_overflow():
@@ -110,6 +110,18 @@ def test_shared_overflow():
     got = _eq("shared_ov.db")
     assert got[b"left-key"] == got[b"right-key"]
     assert len(got[b"left-key"]) > 48
+
+
+def test_overflow_chunk_index():
+    got = _eq("ov_seq.db")
+    assert b"H" * 5000 not in got.values()
+    assert got
+
+
+def test_root_lsn_mismatch():
+    got = _eq("root_lsn.db")
+    assert got
+    assert all(v.startswith(b"v") for v in got.values())
 
 
 def test_recovery_does_not_mutate_image():

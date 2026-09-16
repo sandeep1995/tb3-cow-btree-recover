@@ -208,6 +208,7 @@ class Store:
             slot=slot,
             lsn=self.lsn,
             free_head=free_head,
+            root_lsn=self.root.lsn,
         )
         self.pager.write(slot, sb)
         self.next_slot = other
@@ -269,8 +270,9 @@ class Store:
             if chain[0] in self._ov_new:
                 chunks = [val[i : i + OVERFLOW_PAYLOAD_MAX] for i in range(0, len(val), OVERFLOW_PAYLOAD_MAX)]
                 nxt = NO_PAGE
-                for pid, chunk in zip(reversed(chain), reversed(chunks)):
-                    self.pager.write(pid, encode_overflow(chunk, node.lsn, nxt))
+                for seq in range(len(chunks) - 1, -1, -1):
+                    pid = chain[seq]
+                    self.pager.write(pid, encode_overflow(chunks[seq], node.lsn, nxt, seq))
                     nxt = pid
             encoded_vals.append(OverflowRef(chain[0], len(val)))
         right_id = node.right.page_id if node.right is not None else NO_PAGE

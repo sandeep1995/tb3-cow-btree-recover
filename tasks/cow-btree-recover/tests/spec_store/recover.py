@@ -62,6 +62,9 @@ def _try_slot(pages: list[bytes], slot: int):
     tree_seen: set[int] = set()
     if not _walk_tree(pages, sb["root_page"], sb["lsn"], sb["page_count"], reachable, tree_seen):
         return None
+    root_hdr = unpack_header(pages[sb["root_page"]])
+    if root_hdr["lsn"] != sb["root_lsn"]:
+        return None
     best: dict[bytes, tuple[int, int, bytes]] = {}
     for pid, node in reachable:
         if node.ptype != TYPE_LEAF:
@@ -128,6 +131,7 @@ def _walk_tree(pages, pid, sb_lsn, page_count, reachable, tree_seen) -> bool:
 def _walk_overflow(pages, pid, sb_lsn, leaf_lsn, page_count, remaining) -> bool:
     chain_seen: set[int] = set()
     guard = 0
+    seq = 0
     while remaining > 0:
         if pid == NO_PAGE or pid >= len(pages) or pid >= page_count:
             return False
@@ -138,6 +142,8 @@ def _walk_overflow(pages, pid, sb_lsn, leaf_lsn, page_count, remaining) -> bool:
             return False
         hdr = unpack_header(page)
         if hdr["type"] != TYPE_OVERFLOW or hdr["flags"] != 0 or hdr["nkeys"] != 0:
+            return False
+        if hdr["child0"] != seq:
             return False
         if hdr["lsn"] > sb_lsn or hdr["lsn"] > leaf_lsn:
             return False
@@ -150,6 +156,7 @@ def _walk_overflow(pages, pid, sb_lsn, leaf_lsn, page_count, remaining) -> bool:
         chain_seen.add(pid)
         remaining -= len(chunk)
         pid = nxt
+        seq += 1
         guard += 1
         if guard > len(pages):
             return False
@@ -161,6 +168,7 @@ def _assemble_overflow(pages, ref: OverflowRef, sb_lsn, leaf_lsn, page_count) ->
     pid = ref.page_id
     remaining = ref.length
     guard = 0
+    seq = 0
     chain_seen: set[int] = set()
     while remaining > 0:
         if pid == NO_PAGE or pid >= len(pages) or pid >= page_count or pid in chain_seen:
@@ -170,6 +178,8 @@ def _assemble_overflow(pages, ref: OverflowRef, sb_lsn, leaf_lsn, page_count) ->
             return None
         hdr = unpack_header(page)
         if hdr["type"] != TYPE_OVERFLOW or hdr["flags"] != 0 or hdr["nkeys"] != 0:
+            return None
+        if hdr["child0"] != seq:
             return None
         if hdr["lsn"] > sb_lsn or hdr["lsn"] > leaf_lsn:
             return None
@@ -181,6 +191,7 @@ def _assemble_overflow(pages, ref: OverflowRef, sb_lsn, leaf_lsn, page_count) ->
         chunks.append(chunk)
         remaining -= len(chunk)
         pid = nxt
+        seq += 1
         guard += 1
         if guard > len(pages):
             return None

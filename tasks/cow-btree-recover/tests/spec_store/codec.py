@@ -111,16 +111,19 @@ def encode_super(
     slot: int,
     lsn: int,
     free_head: int = NO_PAGE,
+    root_lsn: int = 0,
 ) -> bytes:
     page = bytearray(PAGE_SIZE)
     page[:HEADER_SIZE] = pack_header(ptype=TYPE_SUPER, nkeys=0, lsn=lsn)
-    struct.pack_into("<IIIII", page, HEADER_SIZE, root_page, page_count, entry_count, slot, free_head)
+    struct.pack_into("<IIIIIQ", page, HEADER_SIZE, root_page, page_count, entry_count, slot, free_head, root_lsn)
     return apply_checksum(page)
 
 
 def decode_super(page: bytes) -> dict:
     hdr = unpack_header(page)
-    root_page, page_count, entry_count, slot, free_head = struct.unpack_from("<IIIII", page, HEADER_SIZE)
+    root_page, page_count, entry_count, slot, free_head, root_lsn = struct.unpack_from(
+        "<IIIIIQ", page, HEADER_SIZE
+    )
     return {
         **hdr,
         "root_page": root_page,
@@ -128,14 +131,17 @@ def decode_super(page: bytes) -> dict:
         "entry_count": entry_count,
         "slot": slot,
         "free_head": free_head,
+        "root_lsn": root_lsn,
     }
 
 
-def encode_overflow(chunk: bytes, lsn: int, nxt: int) -> bytes:
+def encode_overflow(chunk: bytes, lsn: int, nxt: int, seq: int = 0) -> bytes:
     if len(chunk) > OVERFLOW_PAYLOAD_MAX:
         raise ValueError("overflow chunk too large")
     page = bytearray(PAGE_SIZE)
-    page[:HEADER_SIZE] = pack_header(ptype=TYPE_OVERFLOW, nkeys=0, lsn=lsn, right_sibling=nxt)
+    page[:HEADER_SIZE] = pack_header(
+        ptype=TYPE_OVERFLOW, nkeys=0, lsn=lsn, right_sibling=nxt, child0=seq
+    )
     struct.pack_into("<H", page, HEADER_SIZE, len(chunk))
     page[HEADER_SIZE + 2 : HEADER_SIZE + 2 + len(chunk)] = chunk
     return apply_checksum(page)

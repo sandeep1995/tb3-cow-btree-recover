@@ -29,6 +29,20 @@ def _join(pages: list[bytes]) -> bytes:
     return b"".join(pages)
 
 
+def _put_super(pages: list[bytes], slot: int, **overrides) -> None:
+    cur = decode_super(pages[slot])
+    cur.update(overrides)
+    pages[slot] = encode_super(
+        root_page=cur["root_page"],
+        page_count=cur["page_count"],
+        entry_count=cur["entry_count"],
+        slot=cur["slot"],
+        lsn=cur["lsn"],
+        free_head=cur["free_head"],
+        root_lsn=cur["root_lsn"],
+    )
+
+
 def _corrupt(page: bytes, off: int = 64) -> bytes:
     buf = bytearray(page)
     buf[off] ^= 0xFF
@@ -173,15 +187,7 @@ def page_reuse(path: Path) -> None:
     for slot in (0, 1):
         if not header_ok(pages[slot]):
             continue
-        cur = decode_super(pages[slot])
-        pages[slot] = encode_super(
-            root_page=cur["root_page"],
-            page_count=len(pages),
-            entry_count=cur["entry_count"],
-            slot=cur["slot"],
-            lsn=cur["lsn"],
-            free_head=cur["free_head"],
-        )
+        _put_super(pages, slot, page_count=len(pages))
     _write(path, _join(pages))
 
 
@@ -195,15 +201,7 @@ def unlinked_right(path: Path) -> None:
     for slot in (0, 1):
         if not header_ok(pages[slot]):
             continue
-        cur = decode_super(pages[slot])
-        pages[slot] = encode_super(
-            root_page=cur["root_page"],
-            page_count=len(pages),
-            entry_count=cur["entry_count"],
-            slot=cur["slot"],
-            lsn=cur["lsn"],
-            free_head=cur["free_head"],
-        )
+        _put_super(pages, slot, page_count=len(pages))
     _write(path, _join(pages))
 
 
@@ -222,16 +220,16 @@ def interacting(path: Path) -> None:
 
 
 def overflow_lsn_vs_leaf(path: Path) -> None:
-    st = reopen_empty(path)
-    for i in range(8):
-        st.insert(f"k{i:02d}".encode(), b"small")
-    st.insert(b"k00", b"B" * 90)
+    st = _prefix_store(path, 160)
+    st.insert(b"user:0000", b"B" * 90)
     pages = _pages(path.read_bytes())
     newest = _latest_slot(pages)
     sb = decode_super(pages[newest])
     leaf = next(
         n for n in _walk_leaves(pages, sb["root_page"]) if any(isinstance(v, OverflowRef) for v in n.vals)
     )
+    if leaf.page_id == sb["root_page"]:
+        raise SystemExit("overflow leaf is root")
     if leaf.lsn < 1:
         raise SystemExit("leaf lsn too small")
     pages[leaf.page_id] = encode_leaf(leaf.keys, leaf.vals, leaf.lsn - 1, leaf.right_sibling)
@@ -249,7 +247,7 @@ def short_overflow(path: Path) -> None:
     leaf = next(
         n for n in _walk_leaves(pages, sb["root_page"]) if any(isinstance(v, OverflowRef) for v in n.vals)
     )
-    pages.append(encode_overflow(b"X" * 20, sb["lsn"], NO_PAGE))
+    pages.append(encode_overflow(b"X" * 20, sb["lsn"], NO_PAGE, 0))
     new_vals: list = []
     for val in leaf.vals:
         if isinstance(val, OverflowRef):
@@ -257,14 +255,7 @@ def short_overflow(path: Path) -> None:
         else:
             new_vals.append(val)
     pages[leaf.page_id] = encode_leaf(leaf.keys, new_vals, leaf.lsn, leaf.right_sibling)
-    pages[newest] = encode_super(
-        root_page=sb["root_page"],
-        page_count=len(pages),
-        entry_count=sb["entry_count"],
-        slot=sb["slot"],
-        lsn=sb["lsn"],
-        free_head=sb["free_head"],
-    )
+    _put_super(pages, newest, page_count=len(pages))
     _write(path, _join(pages))
 
 
@@ -285,6 +276,40 @@ def shared_overflow(path: Path) -> None:
         raise SystemExit("need two overflow records")
     if refs[0].page_id != refs[1].page_id:
         raise SystemExit("overflow not shared")
+
+
+def overflow_chunk_seq(path: Path) -> None:
+    st = reopen_empty(path)
+    for i in range(12):
+        st.insert(f"k{i:02d}".encode(), b"small")
+    st.insert(b"huge", b"H" * 5000)
+    pages = _pages(path.read_bytes())
+    newest = _latest_slot(pages)
+    sb = decode_super(pages[newest])
+    leaf = next(
+        n for n in _walk_leaves(pages, sb["root_page"]) if any(isinstance(v, OverflowRef) for v in n.vals)
+    )
+    ref = next(v for v in leaf.vals if isinstance(v, OverflowRef))
+    first = pages[ref.page_id]
+    hdr = unpack_header(first)
+    nxt = hdr["right_sibling"]
+    if nxt == NO_PAGE or nxt >= len(pages):
+        raise SystemExit("need two overflow chunks")
+    chunk, nxt2, ov_lsn = decode_overflow(pages[nxt])
+    pages[nxt] = encode_overflow(chunk, ov_lsn, nxt2, 0)
+    _write(path, _join(pages))
+
+
+def mismatched_root_lsn(path: Path) -> None:
+    st = reopen_empty(path)
+    for i in range(12):
+        st.insert(f"k{i:02d}".encode(), f"v{i:02d}".encode())
+    pages = _pages(path.read_bytes())
+    newest = _latest_slot(pages)
+    sb = decode_super(pages[newest])
+    wrong = sb["root_lsn"] + 1 if sb["root_lsn"] != 1 else 2
+    _put_super(pages, newest, root_lsn=wrong)
+    _write(path, _join(pages))
 
 
 def crashed_example(path: Path) -> None:
@@ -312,6 +337,8 @@ def main() -> None:
     overflow_lsn_vs_leaf(img / "ov_lsn_leaf.db")
     short_overflow(img / "short_ov.db")
     shared_overflow(img / "shared_ov.db")
+    overflow_chunk_seq(img / "ov_seq.db")
+    mismatched_root_lsn(img / "root_lsn.db")
     data = root / "environment" / "data"
     data.mkdir(exist_ok=True)
     crashed_example(data / "crashed.db")
