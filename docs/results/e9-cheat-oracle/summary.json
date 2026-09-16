@@ -1,0 +1,46 @@
+{
+  "label": "e9-cheat-oracle",
+  "job": "/Users/sandeep/tb3-cow-btree-recover/jobs/e9-cheat-oracle/2026-09-17__03-58-34",
+  "trial": "/Users/sandeep/tb3-cow-btree-recover/jobs/e9-cheat-oracle/2026-09-17__03-58-34/cow-btree-recover__c875Eta",
+  "reward": "0",
+  "exception_head": "",
+  "job_result": {
+    "id": "bcdfd351-74d1-4631-9907-3e761474e299",
+    "started_at": "2026-09-17T03:58:34.665926",
+    "updated_at": "2026-09-17T03:58:43.642742",
+    "finished_at": "2026-09-17T03:58:43.642742",
+    "n_total_trials": 1,
+    "stats": {
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "n_running_trials": 0,
+      "n_pending_trials": 0,
+      "n_cancelled_trials": 0,
+      "n_retries": 0,
+      "evals": {
+        "oracle__adhoc": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 0.0
+            }
+          ],
+          "pass_at_k": {},
+          "reward_stats": {
+            "reward": {
+              "0.0": [
+                "cow-btree-recover__c875Eta"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      },
+      "n_input_tokens": null,
+      "n_cache_tokens": null,
+      "n_output_tokens": null,
+      "cost_usd": null
+    }
+  }
+}

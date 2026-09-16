@@ -56,6 +56,8 @@ harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -
 | nop engine | `jobs/e7-nop/2026-09-17__03-02-02` | 0.0 |
 | oracle COMMIT-before-super | `jobs/e8-oracle/2026-09-17__03-21-23` | 1.0 (16/16) |
 | nop COMMIT-before-super | `jobs/e8-nop/2026-09-17__03-21-40` | 0.0 |
+| oracle checkpoint-fence | `jobs/e9-oracle/2026-09-17__03-57-48` | 1.0 (21/21) |
+| nop checkpoint-fence | `jobs/e9-nop/2026-09-17__03-58-13` | 0.0 |
 
 ## Deterministic cheat oracle — PASS (reward 0)
 
@@ -112,6 +114,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
 | Deterministic empty recover engine | 0.0 | `jobs/e7-cheat-oracle/2026-09-17__03-02-20` |
 | Deterministic empty recover COMMIT-before-super | 0.0 | `jobs/e8-cheat-oracle/2026-09-17__03-21-51` |
+| Deterministic empty recover checkpoint-fence | 0.0 | `jobs/e9-cheat-oracle/2026-09-17__03-58-34` |
 | Codex engine `/run` 1 | 1.0 | Genuine pass 16/16; `jobs/e7-run-codex-1/2026-09-17__03-04-10`; agent read commit.py and required WAL COMMIT on the super chain |
 | Codex engine `/run` after COMMIT-before-super | 1.0 | `jobs/e8-run-codex-1/2026-09-17__03-22-54`; genuine 16/16 |
 | Codex CBT6 `/cheat` | not started | `/run` still passing on CBT6 |
@@ -121,4 +124,4 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 
 Nop and empty-recover fail because recovery must honor the writer's WAL commit protocol, ignore uncommitted pages, walk children rather than stale siblings, omit tombstones, and assemble shared overflow chains. Hidden images in `/tests/images/` are not in the agent container. Protected `format.py` / `FORMAT.md` are restored from the verifier image. Reward is written only by root into `chmod 700 /logs/verifier`. Hardcoding `/app/data/crashed.db` cannot pass the baked hidden set.
 
-Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed genuine `/run` trial 1 on every FORMAT-checklist revision (CBT1–CBT6) and on both engine-protocol probes (super-then-COMMIT, then COMMIT-before-super). It reads `/app/store/btree/commit.py` and `/app/store/wal/` and patches `recovery/`. Claude `/run` and `/cheat` stay blocked until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.
+Codex `openai/gpt-5.6-sol` `reasoning_effort=xhigh` passed genuine `/run` trial 1 on every FORMAT-checklist revision (CBT1–CBT6) and on both engine-protocol probes (super-then-COMMIT, then COMMIT-before-super). It reads `/app/store/btree/commit.py` and `/app/store/wal/` and patches `recovery/`. The checkpoint-fence revision makes the durable point an intact checkpoint super, not the latest checksum-valid COMMIT; leftover WAL wrap records, torn COMMIT/PAGES, two in-flight COMMITs, and unstamped freelist pages are produced by crashing that writer. Claude `/run` and `/cheat` stay blocked until Codex `/run` is 3/3 fail and Codex `/cheat` is 0.
