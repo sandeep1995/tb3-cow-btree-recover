@@ -1,0 +1,46 @@
+{
+  "label": "e8-oracle",
+  "job": "/Users/sandeep/tb3-cow-btree-recover/jobs/e8-oracle/2026-09-17__03-21-23",
+  "trial": "/Users/sandeep/tb3-cow-btree-recover/jobs/e8-oracle/2026-09-17__03-21-23/cow-btree-recover__DhDWEEZ",
+  "reward": "1",
+  "exception_head": "",
+  "job_result": {
+    "id": "e2665d0b-b082-4b0f-a2ec-cf9a364614bf",
+    "started_at": "2026-09-17T03:21:24.252083",
+    "updated_at": "2026-09-17T03:21:37.747611",
+    "finished_at": "2026-09-17T03:21:37.747611",
+    "n_total_trials": 1,
+    "stats": {
+      "n_completed_trials": 1,
+      "n_errored_trials": 0,
+      "n_running_trials": 0,
+      "n_pending_trials": 0,
+      "n_cancelled_trials": 0,
+      "n_retries": 0,
+      "evals": {
+        "oracle__adhoc": {
+          "n_trials": 1,
+          "n_errors": 0,
+          "metrics": [
+            {
+              "mean": 1.0
+            }
+          ],
+          "pass_at_k": {},
+          "reward_stats": {
+            "reward": {
+              "1.0": [
+                "cow-btree-recover__DhDWEEZ"
+              ]
+            }
+          },
+          "exception_stats": {}
+        }
+      },
+      "n_input_tokens": null,
+      "n_cache_tokens": null,
+      "n_output_tokens": null,
+      "cost_usd": null
+    }
+  }
+}

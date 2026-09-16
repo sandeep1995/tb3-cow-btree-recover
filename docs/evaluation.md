@@ -54,6 +54,8 @@ harbor run -p tasks/cow-btree-recover --agent nop --env docker --yes -k 1 -n 1 -
 | nop CBT6 | `jobs/h6-nop/2026-09-17__02-12-44` | 0.0 |
 | oracle engine | `jobs/e7-oracle/2026-09-17__03-01-07` | 1.0 (16/16) |
 | nop engine | `jobs/e7-nop/2026-09-17__03-02-02` | 0.0 |
+| oracle COMMIT-before-super | `jobs/e8-oracle/2026-09-17__03-21-23` | 1.0 (16/16) |
+| nop COMMIT-before-super | `jobs/e8-nop/2026-09-17__03-21-40` | 0.0 |
 
 ## Deterministic cheat oracle — PASS (reward 0)
 
@@ -108,6 +110,7 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | --- | --- | --- |
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
 | Deterministic empty recover engine | 0.0 | `jobs/e7-cheat-oracle/2026-09-17__03-02-20` |
+| Deterministic empty recover COMMIT-before-super | 0.0 | `jobs/e8-cheat-oracle/2026-09-17__03-21-51` |
 | Codex engine `/run` 1 | 1.0 | Genuine pass 16/16; `jobs/e7-run-codex-1/2026-09-17__03-04-10`; agent read commit.py and required WAL COMMIT on the super chain |
 | Codex engine `/run` after COMMIT-before-super | pending | writer now treats COMMIT as durable without a later superblock |
 | Codex CBT6 `/cheat` | not started | `/run` still passing on CBT6 |
