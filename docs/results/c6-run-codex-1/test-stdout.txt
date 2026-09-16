@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+platform linux -- Python 3.[REDACTED]3.[REDACTED]3, pytest-9.[REDACTED].[REDACTED], pluggy-[REDACTED].6.0
+rootdir: /tests
+plugins: json-ctrf-0.5.2
+collected 2[REDACTED] items
+.....................                                                    [[REDACTED]00%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_outputs.py::test_format_py_unchanged
+PASSED tests/test_outputs.py::test_format_md_unchanged
+PASSED tests/test_outputs.py::test_empty_image
+PASSED tests/test_outputs.py::test_stale_sibling_image
+PASSED tests/test_outputs.py::test_torn_newer_superblock
+PASSED tests/test_outputs.py::test_duplicate_key_lsn
+PASSED tests/test_outputs.py::test_latest_superblock_slot[REDACTED]
+PASSED tests/test_outputs.py::test_overflow_values
+PASSED tests/test_outputs.py::test_torn_overflow_invalidates_newer
+PASSED tests/test_outputs.py::test_prefix_compressed_leaves
+PASSED tests/test_outputs.py::test_page_reuse_stale_sibling
+PASSED tests/test_outputs.py::test_unlinked_right_sibling
+PASSED tests/test_outputs.py::test_interacting_crashes
+PASSED tests/test_outputs.py::test_overflow_lsn_vs_leaf
+PASSED tests/test_outputs.py::test_short_overflow
+PASSED tests/test_outputs.py::test_shared_overflow
+PASSED tests/test_outputs.py::test_overflow_chunk_index
+PASSED tests/test_outputs.py::test_root_lsn_mismatch
+PASSED tests/test_outputs.py::test_tombstone_removes_key
+PASSED tests/test_outputs.py::test_tombstone_torn_falls_back
+PASSED tests/test_outputs.py::test_recovery_does_not_mutate_image
+============================== 2[REDACTED] passed in 0.[REDACTED]8s ==============================
+CTRF verification: 2[REDACTED]/2[REDACTED] passed
