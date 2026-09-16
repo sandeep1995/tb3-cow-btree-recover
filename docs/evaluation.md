@@ -104,7 +104,6 @@ harbor run -p tasks/cow-btree-recover --agent claude-code --model anthropic/clau
 | Deterministic empty recover CBT6 | 0.0 | `jobs/h6-cheat-oracle/2026-09-17__02-13-14` |
 | Codex CBT6 `/cheat` | not started | `/run` still passing |
 | Claude `/cheat` | not started | Codex first |
-| Claude `/cheat` | not started | Codex first |
 
 ## Failure analysis
 
