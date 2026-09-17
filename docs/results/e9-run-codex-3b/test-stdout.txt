@@ -1,0 +1,55 @@
+============================= test session starts ==============================
+platform linux -- Python 3.[REDACTED]3.[REDACTED]3, pytest-9.[REDACTED].[REDACTED], pluggy-[REDACTED].6.0
+rootdir: /tests
+plugins: json-ctrf-0.5.2
+collected 2[REDACTED] items
+.....FFFFF.F.FFFFF.F.                                                    [[REDACTED]00%]
+=================================== FAILURES ===================================
+____________________________ test_crash_after_super ____________________________
+privilege-dropped worker did not report success
+______________________________ test_stale_sibling ______________________________
+privilege-dropped worker did not report success
+_______________________________ test_page_reuse ________________________________
+privilege-dropped worker did not report success
+________________________________ test_tombstone ________________________________
+privilege-dropped worker did not report success
+_______________________________ test_torn_delete _______________________________
+privilege-dropped worker did not report success
+_____________________________ test_shared_overflow _____________________________
+privilege-dropped worker did not report success
+_______________________________ test_torn_newer ________________________________
+privilege-dropped worker did not report success
+________________________________ test_interact _________________________________
+privilege-dropped worker did not report success
+_____________________________ test_first_inflight ______________________________
+privilege-dropped worker did not report success
+______________________________ test_two_inflight _______________________________
+privilege-dropped worker did not report success
+________________________________ test_wal_wrap _________________________________
+privilege-dropped worker did not report success
+_____________________________ test_reuse_inflight ______________________________
+privilege-dropped worker did not report success
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_outputs.py::test_format_py_unchanged
+PASSED tests/test_outputs.py::test_format_md_unchanged
+PASSED tests/test_outputs.py::test_empty_image
+PASSED tests/test_outputs.py::test_slot[REDACTED]_latest
+PASSED tests/test_outputs.py::test_crash_after_wal_pages
+PASSED tests/test_outputs.py::test_overflow
+PASSED tests/test_outputs.py::test_prefix
+PASSED tests/test_outputs.py::test_torn_commit
+PASSED tests/test_outputs.py::test_recovery_does_not_mutate_image
+FAILED tests/test_outputs.py::test_crash_after_super - privilege-dropped work...
+FAILED tests/test_outputs.py::test_stale_sibling - privilege-dropped worker d...
+FAILED tests/test_outputs.py::test_page_reuse - privilege-dropped worker did ...
+FAILED tests/test_outputs.py::test_tombstone - privilege-dropped worker did n...
+FAILED tests/test_outputs.py::test_torn_delete - privilege-dropped worker did...
+FAILED tests/test_outputs.py::test_shared_overflow - privilege-dropped worker...
+FAILED tests/test_outputs.py::test_torn_newer - privilege-dropped worker did ...
+FAILED tests/test_outputs.py::test_interact - privilege-dropped worker did no...
+FAILED tests/test_outputs.py::test_first_inflight - privilege-dropped worker ...
+FAILED tests/test_outputs.py::test_two_inflight - privilege-dropped worker di...
+FAILED tests/test_outputs.py::test_wal_wrap - privilege-dropped worker did no...
+FAILED tests/test_outputs.py::test_reuse_inflight - privilege-dropped worker ...
+========================= [REDACTED]2 failed, 9 passed in 0.[REDACTED]8s =========================
